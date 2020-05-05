@@ -122,18 +122,11 @@ pub struct Tile<'a> {
 impl<'a> Tile<'a> {
 
     pub fn from_id(id: usize, palette: [u32; 4]) -> Self {
-        // let width = 8;
-        // let height = 8;
-
         /* 2 bits per pixel => 2 bytes width */
-        // let image_data_start = id * 2 * 8;
-        // let image_data_end = image_data_start + 2*8;
-        let pixel_data = &TILE[id];
-
         Tile {
             width: 8,
             height: 8,
-            pixel_data: pixel_data,
+            pixel_data: &TILE[id],
             palette: palette,
         }
     }
