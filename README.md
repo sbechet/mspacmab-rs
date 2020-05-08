@@ -1,6 +1,6 @@
 # mspacmab-rs
 
-long term goal: _perfect_ hardware rust remake
+long term goal: _perfect_ hardware rust remake - a method as other to play w/ rust-lang
 
 see mspacmab project for reverse part
 
@@ -80,8 +80,9 @@ for each channel :
 
 # TODO
 
-- Sprites
-- DrawText
-- test_mode
-- Game { hardware_vars, game_vars }; impl Game { new(), run(), test_mode(), timed60Hz() }
-- stm32f103 hardware using `stm32f103-vga-rs` project
+- [x] Tile
+- [x] Sprites
+- [x] DrawText
+- [ ] test_mode
+- [ ] Game { hardware_vars, game_vars }; impl Game { new(), run(), test_mode(), timed60Hz() }
+- [ ] stm32f103 hardware using `stm32f103-vga-rs` project

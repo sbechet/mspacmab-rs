@@ -89,7 +89,7 @@ fn print_grid(display: &mut SimulatorDisplay<Rgb888>, palette_id: u8) {
     }
 }
 
-fn clear_screen(display: &mut SimulatorDisplay<Rgb888>) {
+pub fn clear_screen(display: &mut SimulatorDisplay<Rgb888>) {
     display.clear(Rgb888::BLACK).unwrap();
 }
 

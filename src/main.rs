@@ -15,12 +15,14 @@ mod palette;
 mod pixel;
 mod tile;
 mod sprite;
+mod text;
 mod test_mode;
 
 use palette::PALETTE;
 use tile::{TileId, Tile};
 use sprite::{SpriteId, Sprite};
-use test_mode::{test_mode};
+use text::{TextId, Text};
+use test_mode::{test_mode, clear_screen};
 
 
 struct Resources {
@@ -130,10 +132,16 @@ fn main() -> Result<(), core::convert::Infallible> {
     print_sprite(&mut display, 0, 32, 32, 9);
     print_tile_big_mspacman(&mut display, 64, 64, 9);
     print_tile_heart(&mut display, 128, 128, 1);
+    // Window::new("mspacmab", &output_settings).show_static(&display);
+    clear_screen(&mut display);
+    for i in 0..55 {
+        let t = Text::get_id(i);
+        t.draw_text(&mut display, true);
+    }
     Window::new("mspacmab", &output_settings).show_static(&display);
 
     // check_tile_colors(&mut display);
-    check_sprite_colors(&mut display);
+    // check_sprite_colors(&mut display);
 
     Ok(())
 }
