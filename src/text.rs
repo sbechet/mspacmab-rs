@@ -89,7 +89,7 @@ const TEXT: [Text; 55] = [
     Text { coord: (11-2,14), color: &[ 5], text: b"PLAYER@ONE" },    // 1a 1a 1a 1a 1a 10 10
     Text { coord: (11-2,14), color: &[ 5], text: b"PLAYER@TWO" },
     Text { coord: (11-2,20), color: &[ 1], text: b"GAME@@OVER" },
-    Text { coord: (13-2,20), color: &[ 9], text: b"READY{" },
+    Text { coord: (13-2,20), color: &[ 9], text: b"READY[" },
     Text { coord: ( 8-2,15), color: &[ 7], text: b"PUSH@START@BUTTON" },
     Text { coord: (10-2,17), color: &[ 7], text: b"1@PLAYER@ONLY@" },
     Text { coord: (10-2,17), color: &[ 7], text: b"1@OR@2@PLAYERS" },
