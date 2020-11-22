@@ -1,4 +1,6 @@
 use core::marker::PhantomData;
+use num_derive::FromPrimitive;
+use num_derive::ToPrimitive;
 
 use embedded_graphics::{
     drawable::Pixel as EgPixel,
@@ -7,12 +9,11 @@ use embedded_graphics::{
     pixelcolor::{raw::RawData, PixelColor},
 };
 
-use crate::palette::PALETTE;
+use crate::palette::{ PALETTE, ColorE };
 use crate::pixel::Pixel;
 use crate::mspacmab_data::{TILE};
 
-
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, FromPrimitive, ToPrimitive)]
 pub enum TileId {
     HexNumber0 =   0,
     HexNumber1 =   1,
@@ -54,7 +55,7 @@ pub enum TileId {
     DoNo2 = 45,
     DoNo3 = 46,
     /* 47 empty */
-    Number0 =   48,
+    Number0 =   48, // 0x30 (b'0')
     Number1 =   49,
     Number2 =   50,
     Number3 =   51,
@@ -71,42 +72,178 @@ pub enum TileId {
     GridUpperLeft = 62,
     GridLowerLeft = 63,
     Space = 64,
-    LetterA = 65,
-    LetterB = 66,
-    LetterC = 67,
-    LetterD = 68,
-    LetterE = 69,
-    LetterF = 70,
-    LetterG = 71,
-    LetterH = 72,
-    LetterI = 73,
-    LetterJ = 74,
-    LetterK = 75,
-    LetterL = 76,
-    LetterM = 77,
-    LetterN = 78,
-    LetterO = 79,
-    LetterP = 80,
-    LetterQ = 81,
-    LetterR = 82,
-    LetterS = 83,
-    LetterT = 84,
-    LetterU = 85,
-    LetterV = 86,
-    LetterW = 87,
-    LetterX = 88,
-    LetterY = 89,
-    LetterZ = 90,
+    A = b'A' as isize,   // 0d65 0x41 (b'A')
+    B = 66,
+    C = 67,
+    D = 68,
+    E = 69,
+    F = 70,
+    G = 71,
+    H = 72,
+    I = 73,
+    J = 74,
+    K = 75,
+    L = 76,
+    M = 77,
+    N = 78,
+    O = 79,
+    P = 80,
+    Q = 81,
+    R = 82,
+    S = 83,
+    T = 84,
+    U = 85,
+    V = 86,
+    W = 87,
+    X = 88,
+    Y = 89,
+    Z = b'Z' as isize,   // 0d90 0x5A (b'Z'),
     Exclamation = 91,
     Copyright = 92,
-    PtsPt = 93,
-    PtsTs = 94,
-    Ptss = 95,
-    /* TODO .. 96..=255 */
+    PtsLeft = 93,
+    PtsMiddle = 94,
+    PtsRight = 95,  // 0x5F
+
+    // 0x60..0x8F
+
+    CherryUR = 144, // 0x90
+    CherryUL = 145, // 0x91
+    CherryLR = 146, // 0x92
+    CherryLL = 147, // 0x93
+
+    StrawberryUR = 148, // 0x94
+    StrawberryUL = 149, // 0x95
+    StrawberryLR = 150, // 0x96
+    StrawberryLL = 151, // 0x97
+
+    PeachUR = 152, // 0x98
+    PeachUL = 153, // 0x99
+    PeachLR = 154, // 0x9A
+    PeachLL = 155, // 0x9B
+
+    PretzelUR = 156, // 0x9C
+    PretzelUL = 157, // 0x9D
+    PretzelLR = 158, // 0x9E
+    PretzelLL = 159, // 0x9F
+
+    AppleUR = 160, // 0xA0
+    AppleUL = 161, // 0xA1
+    AppleLR = 162, // 0xA2
+    AppleLL = 163, // 0xA3
+
+    PearUR = 164, // 0xA4
+    PearUL = 165, // 0xA5
+    PearLR = 166, // 0xA6
+    PearLL = 167, // 0xA7
+
+    BananaUR = 168, // 0xA8
+    BananaUL = 169, // 0xA9
+    BananaLR = 170, // 0xAA
+    BananaLL = 171, // 0xAB
+
+    KeyUR = 172, // 0xAC
+    KeyUL = 173, // 0xAD
+    KeyLR = 174, // 0xAE
+    KeyLL = 175, // 0xAF
+
+    MidwayLogoLine11 = 176,  // 0xB0
+    MidwayLogoLine12 = 177,  // 0xB1
+    MidwayLogoLine13 = 178,  // 0xB2
+    MidwayLogoLine14 = 179,  // 0xB3
+
+    MidwayLogoLine21 = 180,  // 0xB4
+    MidwayLogoLine22 = 181,  // 0xB5
+    MidwayLogoLine23 = 182,  // 0xB6
+    MidwayLogoLine24 = 183,  // 0xB7
+
+    MidwayLogoLine31 = 184,  // 0xB8
+    MidwayLogoLine32 = 185,  // 0xB9
+    MidwayLogoLine33 = 186,  // 0xBA
+    MidwayLogoLine34 = 187,  // 0xBB
+
+    MidwayLogoLine41 = 188,  // 0xBC
+    MidwayLogoLine42 = 189,  // 0xBD
+    MidwayLogoLine43 = 190,  // 0xBE
+    MidwayLogoLine44 = 191,  // 0xBF
+
+    MazeFill = 192,  // 0xC0
+    MazeFillS = 193,  // 0xC1 -- sym(192)
+
+    Test194 = 194,  // 0xC2
+    Test195 = 195,  // 0xC3
+    // 0xC4, ... 0xCD
+
+    MazeGhostDoor206 = 206,  // 0xCE
+    MazeGhostDoor207 = 207,  // 0xCF -- sym
+
+    MazeUpRight = 208,  // 0xD0
+    MazeUpLeft = 209,   // 0xD1 -- sym
+
+    MazeVerticalOnTheLeft = 210,  // 0xD2
+    MazeVerticalOnTheRight = 211,  // 0xD3 -- sym
+
+    MazeRoundDownRight = 212,   // 0xD4
+    MazeRoundDownLeft = 213,    // 0xD5 -- sym
+
+    Maze214 = 214,  // 0xD6 (in level >=2)
+    Maze215 = 215,  // 0xD7 -- sym
+
+    Maze216 = 216,  // 0xD8
+    Maze217 = 217,  // 0xD9 -- sym
+
+    MazeHorizontalDown = 218,  // 0xDA
+    MazeHorizontalDownS = 219,  // 0xDB -- sym
+
+    MazeHorizontalUp = 220,  // 0xDC
+    MazeHorizontalUpS = 221,  // 0xDD -- sym
+
+    MazeHorizontalDownFull = 222,  // 0xDE
+    MazeHorizontalDownFullS = 223,  // 0xDF -- sym
+
+    // 0xE0, 0xE1, 0xE2, 0xE3
+
+    MazeHorizontalUpFull = 228,  // 0xE4
+    MazeHorizontalUpFullS = 229,  // 0xE5 -- sym
+
+    MazeRoundUpRightFilled = 230, // 0xE6
+    MazeRoundUpLeftFilled = 231, // 0xE7
+
+    MazeFullVerticalRight = 232,   // 0xE8
+    MazeFullVerticalLeft = 233,    // 0xE9 -- sym
+
+    MazeRoundDownRightFilled = 234,  // 0xEA
+    MazeRoundDownLeftFilled = 235,  // 0xEB -- sym
+
+    MazeJailUpRight = 236,  // 0xEC
+    MazeJailUpLeft = 237,  // 0xED
+    MazeJailDownRight = 238,  // 0xEE
+    MazeJailDownLeft = 239,  // 0xEF
+
+    MazeJailHorizontalUp = 240, // 0xF0
+    MazeJailHorizontalUpS = 241, // 0xF1
+
+    MazeInternalRoundDownRightFilled = 242, // 0xF2
+    MazeInternalRoundDownLeftFilled = 243, // 0xF3
+    MazeInternalRoundUpRightFilled = 244, // 0xF4
+    MazeInternalRoundUpLeftFilled = 245, // 0xF5
+
+    // 0xF6: DotUpRight
+    // 0xF7: DotUpLeft
+    // 0xF8: DotDownRight
+    // 0xF9: DotDownLeft
+
+    MazeInternalRoundDownRightSimpleToFilled = 250,     // 0xFA
+    MazeInternalRoundDownLeftSimpleToFilled = 251,  // 0xFB
+
+    GhostJailFloor = 252,  // 0xFC
+    GhostJailFloorSym = 253,  // 0xFD -- sym(252)
+
+    // 0xFE, 0xFF
+
 }
 
 impl TileId {
-    pub fn get_tile(&self, palette_id: u8) -> Tile {
+    pub fn get_tile(&self, palette_id: ColorE) -> Tile {
         Tile::new(self, PALETTE[palette_id as usize])
     }
 }

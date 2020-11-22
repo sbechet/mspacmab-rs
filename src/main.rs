@@ -5,143 +5,131 @@ use embedded_graphics::{
 };
 use embedded_graphics_simulator::{
     SimulatorDisplay, 
+    SimulatorEvent,
     Window, 
     OutputSettingsBuilder
 };
 
+use std::thread;
+use std::time::Duration;
+
 mod mspacmab_data;
+mod mspacmab_data_maze;
+mod mspacmab_data_fruit;
+mod hardware;
+mod game_hw_video;
+mod game_hw_sound;
+mod game_counter;
 mod bgr233;
 mod palette;
 mod pixel;
 mod tile;
 mod sprite;
+mod sprite_element;
 mod text;
 mod test_mode;
+mod game_task;
+mod game_task_timed;
+mod game;
 
-use palette::PALETTE;
+use test_mode::test_mode;
+use game_hw_video::GameHwVideo;
+use palette::{PALETTE, ColorE};
 use tile::{TileId, Tile};
 use sprite::{SpriteId, Sprite};
 use text::{TextId, Text};
-use test_mode::{test_mode, clear_screen};
+use game::{Game};
 
-
-struct Resources {
-    // #[init(Vec::new())]
-    // task:Task,   // = Vec::new();
-}
-
-fn init() {
-}
-
-
-fn idle(r: Resources) {
-    loop {
-        /* Si tâche dans la FIFO, executer la tâche */
-
-    }
-}
 
 // big ms-pacman
-fn print_tile_big_mspacman(display: &mut SimulatorDisplay<Rgb888>, x: i32, y:i32, c:u8) {
-    let tile = TileId::get_tile(&TileId::MspacBigUpperLeft, c);
-    Image::new(&tile, Point::new(x,y)).draw(display).unwrap();
-
-    let tile = TileId::get_tile(&TileId::MspacBigUpperRight, c);
-    Image::new(&tile, Point::new(x+8,y)).draw(display).unwrap();
-
-    let tile = TileId::get_tile(&TileId::MspacBigLowerRight, c);
-    Image::new(&tile, Point::new(x+8,y+8)).draw(display).unwrap();
-
-    let tile = TileId::get_tile(&TileId::MspacBigLowerLeft, c);
-    Image::new(&tile, Point::new(x,y+8)).draw(display).unwrap();
+fn print_tile_big_mspacman(hwvideo: &mut GameHwVideo, x: i32, y:i32, c:ColorE) {
+    hwvideo.put_screen( Point::new(x  ,y  ), TileId::MspacBigUpperLeft,  c);
+    hwvideo.put_screen( Point::new(x+1,y  ), TileId::MspacBigUpperRight, c);
+    hwvideo.put_screen( Point::new(x+1,y+1), TileId::MspacBigLowerRight, c);
+    hwvideo.put_screen( Point::new(x  ,y+1), TileId::MspacBigLowerLeft,  c);
 }
 
 // big heart
-fn print_tile_heart(display: &mut SimulatorDisplay<Rgb888>, x: i32, y:i32, c:u8) {
-    let tile = TileId::get_tile(&TileId::HeartUpperLeft, c);
-    Image::new(&tile, Point::new(x,y)).draw(display).unwrap();
-
-    let tile = TileId::get_tile(&TileId::HeartUpperRight, c);
-    Image::new(&tile, Point::new(x+8,y)).draw(display).unwrap();
-
-    let tile = TileId::get_tile(&TileId::HeartLowerRight, c);
-    Image::new(&tile, Point::new(x+8,y+8)).draw(display).unwrap();
-
-    let tile = TileId::get_tile(&TileId::HeartLowerLeft, c);
-    Image::new(&tile, Point::new(x,y+8)).draw(display).unwrap();
+fn print_tile_heart(hwvideo: &mut GameHwVideo, x: i32, y:i32, c:ColorE) {
+    hwvideo.put_screen( Point::new(x  ,y  ), TileId::HeartUpperLeft,  c);
+    hwvideo.put_screen( Point::new(x+1,y  ), TileId::HeartUpperRight,  c);
+    hwvideo.put_screen( Point::new(x+1,y+1), TileId::HeartLowerRight,  c);
+    hwvideo.put_screen( Point::new(x  ,y+1), TileId::HeartLowerLeft,  c);
 }
 
+// use std::thread;
+// use std::thread::sleep;
+// use std::time::Duration;
 
+// fn timed_60_hz() {
+//     let mut i = 0;
+//     loop {
+//         println!("timed fn running: {}", i);
+//         i += 1;
+//         i %= 60;
+//         // For 60 Hz:
+//         // ----------
+//         // Freq (Hz) | Buffer Size (Bytes)
+//         // 44_100    | 735 (44100/60)
+//         // 48_000    | 800
+//         // 96_000    | 1600
+//         sleep(Duration::from_micros(1_000_000/60));
+//     }
+// }
 
-fn print_tile(display: &mut SimulatorDisplay<Rgb888>, tile: u8, x: i32, y:i32, c:u8) {
-    let t = Tile::from_id(tile as usize, PALETTE[c as usize]);
-    let image: Image<Tile, Rgb888> = Image::new(&t, Point::new(x,y));
-    image.draw(display).unwrap();
-}
+// fn create_timed_60_hz_thread(g:&mut Game) -> Result<(), std::io::Error> {
+//     thread::Builder::new().name("timed_60_hz".to_string()).spawn(move || {
+//         g.timed_60_hz();
+//     })?;
 
-fn print_sprite(display: &mut SimulatorDisplay<Rgb888>, sprite: u8, x: i32, y:i32, c:u8) {
-    let s = Sprite::from_id(sprite as usize, PALETTE[c as usize]);
-    let image: Image<Sprite, Rgb888> = Image::new(&s, Point::new(x,y));
-    image.draw(display).unwrap();
-}
-
-fn check_tile_colors(display: &mut SimulatorDisplay<Rgb888>) {
-    let output_settings = OutputSettingsBuilder::new().scale(2).build();
-    let nums = vec![1,3,5,7,9,14,15,16,17,18,20,21,22,23,24,25,26,27,29,30,31];
-
-    for m in nums {
-        println!("palette_id = {}", m);
-        for n in 0..255 {
-            let x = n % 16;
-            let y = n / 16;
-            // println!("({}, {}, {})", x, y, m);
-            let t1 = Tile::from_id(n, PALETTE[m]);
-            let image: Image<Tile, Rgb888> = Image::new(&t1, Point::new( (x*8) as i32, (y*8) as i32));
-            image.draw(display).unwrap();
-        }
-        Window::new("check_tile_colors", &output_settings).show_static(&display);
-    }
-}
-
-fn check_sprite_colors(display: &mut SimulatorDisplay<Rgb888>) {
-    let output_settings = OutputSettingsBuilder::new().scale(2).build();
-    let nums = vec![1,3,5,7,9,14,15,16,17,18,20,21,22,23,24,25,26,27,29,30,31];
-
-    for m in nums {
-        println!("palette_id = {}", m);
-        for n in 0..64 {
-            let x = n % 8;
-            let y = n / 8;
-            // println!("({}, {}, {})", x, y, m);
-            let s = Sprite::from_id(n, PALETTE[m]);
-            let image: Image<Sprite, Rgb888> = Image::new(&s, Point::new( (x*16) as i32, (y*16) as i32));
-            image.draw(display).unwrap();
-        }
-        Window::new("check_sprite_colors", &output_settings).show_static(&display);
-    }
-}
-
+//     Ok(())
+// }
 
 fn main() -> Result<(), core::convert::Infallible> {
-    let mut display: SimulatorDisplay<Rgb888> = SimulatorDisplay::new(Size::new(28*8, 36*8));
+    // let mut hwvideo = GameHwVideo::new_simulator();
 
-    let output_settings = OutputSettingsBuilder::new().scale(2).build();
 
-    test_mode(&mut display);
-    print_tile(&mut display, 65, 1, 1, 9);
-    print_sprite(&mut display, 0, 32, 32, 9);
-    print_tile_big_mspacman(&mut display, 64, 64, 9);
-    print_tile_heart(&mut display, 128, 128, 1);
-    // Window::new("mspacmab", &output_settings).show_static(&display);
-    clear_screen(&mut display);
-    for i in 0..55 {
-        let t = Text::get_id(i);
-        t.draw_text(&mut display, true);
+    // hwvideo.put_screen( Point { x:1, y:1 }, TileId::LetterA, ColorE::Yellow);
+    // hwvideo.put_sprite( 0, Point {x:32, y:32 }, SpriteId::ManStart, ColorE::Yellow);
+    // print_tile_big_mspacman(&mut hwvideo, 8, 8, ColorE::Yellow);
+    // print_tile_heart(&mut hwvideo, 16, 16, ColorE::Red);
+    // for i in 0..55 {
+    //     hwvideo.put_text_id(i);
+    // }
+
+    // let output_settings = OutputSettingsBuilder::new().scale(1).build();
+    // let mut window = Window::new("mspacmab", &output_settings);
+    // let mut g = Game::new(&mut hwvideo);
+    let mut g = Game::new();
+
+    if test_mode(&mut g) == false {
+        return Ok(());
     }
-    Window::new("mspacmab", &output_settings).show_static(&display);
+    println!("Return from test_mode()");
+    g.hwoutput.sound_enabled = true;
+    g.hwoutput.flip_screen = false;
+    g.hwoutput.lamp1 = false;
+    g.hwoutput.lamp2 = false;
+    g.hwoutput.coin_lockout = false;
+    g.hwoutput.coin_counter = 0;
+    g.hwvideo.clear_tiles();
+    g.subroutine_init_state = 0;
 
-    // check_tile_colors(&mut display);
-    // check_sprite_colors(&mut display);
+    g.update();
 
-    Ok(())
+    // let mut line = String::new();
+    // let _input = std::io::stdin().read_line(&mut line).expect("Failed to read line");
+
+    'running: loop {
+        if g.hwinput.update(&mut g.hwvideo.window) == false {
+            break;
+        }
+        // 60Hz
+        thread::sleep(Duration::from_millis(10000*1/60));   // TODO: Change for real-timer
+        g.timed_60_hz();
+        g.update();
+        g.idle();
+    }
+
+    return Ok(());
 }

@@ -7,19 +7,94 @@ use embedded_graphics::{
     pixelcolor::{raw::RawData, PixelColor},
 };
 
-use crate::palette::PALETTE;
+use crate::palette::{ ColorE, PALETTE };
 use crate::pixel::Pixel;
 use crate::mspacmab_data::{SPRITE};
 
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum SpriteId {
-    Sprite0 = 0,
-    /* TODO */
+    Cherry=0,
+    Strawberry=1,
+    Orange=2,
+    Pretzel=3,
+    Apple=4,
+    Pear=5,
+    Banana=6,
+    PearSmall=7,
+
+    S100=8,
+    S200=9,
+    S500=10,
+    S700=11,
+    S1000=12,
+    S2000=13,
+    S5000=14,
+
+    ManSmallLeft=15,
+
+    Gfx10=16,
+    Gfx11=17,
+
+    GfxActLeft=18,
+    GfxActRight=19,
+
+    Gfx14=20,
+    Gfx15=21,
+    Gfx16=22,
+    Gfx17=23,
+    Gfx18=24,
+
+    ManRight2=25,
+    ManDown2=26,
+    ManRight1=27,
+
+    GhostFrozen1=28,
+    GhostFrozen2=29,
+
+    Heart=30,
+    Empty=31,
+
+    GhostRight1=32,
+    GhostRight2=33,
+    GhostDown1=34,
+    GhostDown2=35,
+    GhostLeft1=36,
+    GhostLeft2=37,
+    GhostUp1=38,
+    GhostUp2=39,
+
+    T200=40,
+    T400=41,
+    T800=42,
+    T1600=43,
+
+    ManStart=44,
+
+    MsTurn1=45,
+    ManDown1=46,
+    MsRight2=47,
+    Gfx30=48,
+    MsTurn2=49,
+
+    MsBack=50,
+    MsDown2=51,
+    MsDown1=52,
+    MsLeft1=53,
+    MsUp1=54,
+    MsRight1=55,
+    MsDown1Bis=56,
+    MsLeft1Bis=57,
+    MsUp1Bis=58,
+    MsRight1Bis=59,
+    MsDown1Ter=60,
+    MsLeft1Ter=61,
+    MsUp1Ter=62,
+    FruitStart=63,
 }
 
 impl SpriteId {
-    pub fn get_sprite(&self, palette_id: u8) -> Sprite {
+    pub fn get_sprite(&self, palette_id: ColorE) -> Sprite {
         Sprite::new(self, PALETTE[palette_id as usize])
     }
 }
@@ -30,6 +105,7 @@ pub struct Sprite<'a> {
     height: u16,
     pixel_data: &'a [u32; 16],
     palette: [u32; 4],
+    flip: bool,
 }
 
 impl<'a> Sprite<'a> {
@@ -41,11 +117,16 @@ impl<'a> Sprite<'a> {
             height: 16,
             pixel_data: &SPRITE[id],
             palette: palette,
+            flip: false,
         }
     }
 
     pub fn new(id: &SpriteId, palette: [u32; 4]) -> Self {
         Sprite::from_id(*id as usize, palette)
+    }
+
+    pub fn set_flip(&mut self, flip: bool) {
+        self.flip = flip;
     }
 
     /// Get the image width in pixels
@@ -60,6 +141,7 @@ impl<'a> Sprite<'a> {
 
     /// Get the raw image data contained in this image
     pub fn image_data(&self) -> &[u32; 16] {
+        // TODO: implement self.flip
         self.pixel_data
     }
 }

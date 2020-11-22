@@ -15,18 +15,27 @@ const LIGHT_BROWN: u32  = 0x00_FF_B8_47;
 const LIGHT_BROWN2: u32 = 0x00_FF_B8_97;
 const LIGHT_GREEN: u32  = 0x00_47_B8_97;
 
+/*
+
+    Ignored when actually coloring the grid, so it is invisible onscreen:
+
+    bit 7 = ? (0x80)
+    bit 6 = 1 (0x40) Historicaly was used for tunnel slowdown (see is_tunnel_slowdown() fn)
+    bit 5 = ? (0x20)
+
+*/
 // use 21 palettes (RGB888 => 63 useful bytes)
 pub const PALETTE: [ [u32; 4]; 32] = [
     [BLACK,BLACK,BLACK,BLACK],  // 0 TOREMOVE?
-    [BLACK,GREY,BLUE,RED],      // 1
+    [BLACK,GREY,BLUE,RED],      // 1 RED
+    [BLACK,BLACK,BLACK,BLACK],  // flashing?
+    [BLACK,GREY,BLUE,PINK],     // 3 PINK
     [BLACK,BLACK,BLACK,BLACK],  // TOREMOVE
-    [BLACK,GREY,BLUE,PINK],     // 3
+    [BLACK,GREY,BLUE,LIGHT_BLUE],   // 5 BLUE
     [BLACK,BLACK,BLACK,BLACK],  // TOREMOVE
-    [BLACK,GREY,BLUE,LIGHT_BLUE],   // 5
+    [BLACK,GREY,BLUE,LIGHT_BROWN],  // 7 ORANGE
     [BLACK,BLACK,BLACK,BLACK],  // TOREMOVE
-    [BLACK,GREY,BLUE,LIGHT_BROWN],  // 7
-    [BLACK,BLACK,BLACK,BLACK],  // TOREMOVE
-    [BLACK,BLUE,RED,YELLOW],    // 9 -> mspacmab
+    [BLACK,BLUE,RED,YELLOW],    // 9 YELLOW
     [BLACK,BLACK,BLACK,BLACK],  // TOREMOVE
     [BLACK,BLACK,BLACK,BLACK],  // TOREMOVE
     [BLACK,BLACK,BLACK,BLACK],  // TOREMOVE
@@ -50,3 +59,26 @@ pub const PALETTE: [ [u32; 4]; 32] = [
     [BLACK,GREY,BLUE,LIGHT_BROWN2],     // 30
     [BLACK,LIGHT_BROWN2,BLACK,GREY],    // 31
 ];
+
+#[derive(Copy, Clone)]
+pub enum ColorE {
+    Black=0,
+    Red=1,
+    Flashing=2,
+    Pink=3,
+    Blue=5,
+    Orange=7,
+    Yellow=9,
+    LightBrown2=14,
+    ColorFruit=15,
+    ColorGreyRed=18,
+    ColorMazeLevel6_7_8_9=20,
+    Brown=21,
+    ColorMazeLevel3_4_5=22,
+    ColorFruitPear=23,
+    ColorMazeLevel14_15_16_17AndGhostsDoor=24,
+    ColorPacmanAndGhostInitialMapPositions=26,
+    ColorTunnelArea=27,
+    ColorMazeLevel1_2_18_19_20_21=29,
+    White=31,
+}
