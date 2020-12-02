@@ -137,7 +137,7 @@ impl HardwareInput {
             player2_start_button: false,
             cocktail_cabinet: false,
             // dip switch
-            coinage: Coinage::FreePlay,     // TODO: must change to finish 03fe/0413/execute_DEMO_task_state_patch()!
+            coinage: Coinage::For2coins1credit, //Coinage::FreePlay,     // TODO: must change to finish 03fe/0413/execute_DEMO_task_state_patch()!
             live: Live::Six,
             bonus: Bonus::Pts20000,
             hard_game: false,

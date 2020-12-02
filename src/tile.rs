@@ -104,7 +104,23 @@ pub enum TileId {
     PtsMiddle = 94,
     PtsRight = 95,  // 0x5F
 
-    // 0x60..0x8F
+    // 0x60..0x7F
+
+    FlashingBulbsUpWW = 128, // 0x80 --
+    FlashingBulbsUpGW = 129, // 0x81 o-
+    FlashingBulbsUpWG = 130, // 0x82 -o
+    FlashingBulbsLeftWW = 131, // 0x83 ||
+    FlashingBulbsLeftWG = 132, // 0x84 |o
+    FlashingBulbsLeftGW = 133, // 0x85 o|
+    FlashingBulbsBottomWW = 134, // 0x86 ||
+    FlashingBulbsBottomWG = 135, // 0x87 |o
+    FlashingBulbsBottomGW = 136, // 0x88 o|
+    FlashingBulbsRightWW = 137, // 0x89 --
+    FlashingBulbsRightGW = 138, // 0x8A o-
+    FlashingBulbsRightWG = 139, // 0x8B -o
+
+    // 0x8C..0x8F
+
 
     CherryUR = 144, // 0x90
     CherryUL = 145, // 0x91
@@ -246,6 +262,30 @@ impl TileId {
     pub fn get_tile(&self, palette_id: ColorE) -> Tile {
         Tile::new(self, PALETTE[palette_id as usize])
     }
+
+    pub fn next_flashing(&self) -> Option<TileId> {
+        match self {
+            Self::FlashingBulbsUpWW => None,
+            Self::FlashingBulbsUpGW => Some(Self::FlashingBulbsUpWW),
+            Self::FlashingBulbsUpWG => Some(Self::FlashingBulbsUpGW),
+
+            Self::FlashingBulbsLeftWW => None,
+            Self::FlashingBulbsLeftWG => Some(Self::FlashingBulbsLeftWW),
+            Self::FlashingBulbsLeftGW => Some(Self::FlashingBulbsLeftGW),
+
+            Self::FlashingBulbsBottomWW => None,
+            Self::FlashingBulbsBottomWG => Some(Self::FlashingBulbsBottomWW),
+            Self::FlashingBulbsBottomGW => Some(Self::FlashingBulbsBottomWG),
+
+            Self::FlashingBulbsRightWW => None,
+            Self::FlashingBulbsRightGW => Some(Self::FlashingBulbsRightWW),
+            Self::FlashingBulbsRightWG => Some(Self::FlashingBulbsRightGW),
+
+            _ => None,
+        }
+    }
+
+
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
@@ -286,6 +326,7 @@ impl<'a> Tile<'a> {
     pub fn image_data(&self) -> &[u16; 8] {
         self.pixel_data
     }
+
 }
 
 

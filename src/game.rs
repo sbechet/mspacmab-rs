@@ -183,6 +183,9 @@ pub struct Game {
     // src:4f00
     pub intermission_mode: bool,
 
+    // src:4f01
+    pub flashing_bulbs_counter: u8,
+
     // src:4e8c, src:4e92, src:4e97
     // src:4e9c, src:4eac, src:4ebc
     // src:4ecc, src:4edc, src:4eec
@@ -204,7 +207,7 @@ impl Game {
             counter: Counter60Hz::new(),
             led_state: false,
             mode: MainStateE::Init,                        // src:4e00
-            subroutine_init_state: 0,                        // src:4e01
+            subroutine_init_state: 0,                      // src:4e01
 
             subroutine_demo_state: 0,
             subroutine_coin_inserted_state: 0,
@@ -307,6 +310,8 @@ impl Game {
             // Is set to true during intermissions and parts of the attract mode, otherwise false
             intermission_mode: false,
 
+            flashing_bulbs_counter: 0,
+
             task: GameTask::new(),
             task_timed: GameTaskTimed::new(),
         }
@@ -349,13 +354,11 @@ impl Game {
                 println!("change_mode/Demo");
                 self.t1d_draw_credit_qty();
                 if self.number_of_credits != 0 {
-                    self.mode = MainStateE::CoinInserted;
+                    self.mode = MainStateE::CoinInserted;   // +=1
                     self.subroutine_demo_state = 0;
                     self.subroutine_playing_state = 0;
                 } else {
-                    // src: 3e5c
-                    //  execute_DEMO_task_state_patch()
-                    // TODO
+                    self.execute_demo_task_state_patch();
                 }
             },
             MainStateE::CoinInserted => {
@@ -1174,6 +1177,82 @@ impl Game {
         }
 
         return true;
+    }
+
+    // src:3e5c
+    fn execute_demo_task_state_patch(&mut self) {
+        if self.subroutine_demo_state != 16 {
+            self.flashing_bulbs_around_the_marquee();
+        }
+        // TODO
+        /*
+        // match self.subroutine_demo_state {
+            demo_mode_prepare_screen
+            demo_mode_draw_the_midway_logo_and_copyright
+            demo_mode_display_MS_pacman
+            RET
+            demo_mode_display_with
+            demo_mode_display_Blinky
+            demo_mode_move_Blinky_around
+            demo_mode_clear_with_display_Pinky
+            demo_mode_move_Pinky_across
+            demo_mode_display_Inky
+            demo_mode_move_Inky_across
+            demo_mode_display_Sue
+            demo_mode_move_Sue_across
+            demo_mode_display_Starring
+            demo_mode_display_Ms_pacman
+            demo_mode_move_mspacman_across
+            demo_mode_start_demo_mode_where_mspacman_plays_herself
+        // }
+        */
+    }
+
+    // This sub controls the flashing bulbs around the marquee in the attract screen 
+    // src:3ed0
+    fn flashing_bulbs_around_the_marquee(&mut self) {
+        // src:3f81
+        // (7,11) -> (24, 18)
+        const FLASHING_BULBS: [ [(u8, u8); 8]; 6] = [
+            [(8, 18), (9, 18), (10, 18), (11, 18), (12, 18), (13, 18), (14, 18), (15, 18), ],
+            [(16, 18), (17, 18), (18, 18), (19, 18), (20, 18), (21, 18), (22, 18), (23, 18), ],
+
+            [(24, 18), (24, 17), (24, 16), (24, 15), (24, 14), (24, 13), (24, 12), (24, 11), ],
+
+            [(23, 11), (22, 11), (21, 11), (20, 11), (19, 11), (18, 11), (17, 11), (16, 11), ],
+            [(15, 11), (14, 11), (13, 11), (12, 11), (11, 11), (10, 11), (9, 11), (8, 11), ],
+
+            [(7, 11), (7, 12), (7, 13), (7, 14), (7, 15), (7, 16), (7, 17), (7, 18), ],
+        ];
+        const TILE1: [TileId; 6] = [TileId::FlashingBulbsBottomWG, TileId::FlashingBulbsBottomWG, TileId::FlashingBulbsRightGW, TileId::FlashingBulbsUpGW, TileId::FlashingBulbsUpGW, TileId::FlashingBulbsLeftWG];
+        const TILE2: [TileId; 6] = [TileId::FlashingBulbsBottomGW, TileId::FlashingBulbsBottomGW, TileId::FlashingBulbsRightWG, TileId::FlashingBulbsUpWG, TileId::FlashingBulbsUpWG, TileId::FlashingBulbsLeftGW];
+
+        self.flashing_bulbs_counter += 1;
+        self.flashing_bulbs_counter &= 15;
+
+        // two step for each index using flashing_bulbs_counter lower bit
+        let i: usize = self.flashing_bulbs_counter as usize >> 1;
+        if self.flashing_bulbs_counter & 1 != 0 {
+            for j in 0..6 {
+                let c = FLASHING_BULBS[j][i];
+                let p = Point::new(c.0.into(), c.1.into());
+                self.hwvideo.put_screen_tile(p, TILE1[j]);
+            }
+        } else {
+            for j in 0..6 {
+                let c = FLASHING_BULBS[j][i];
+                let p = Point::new(c.0.into(), c.1.into());
+                let c_old = if i > 0 {
+                    FLASHING_BULBS[j][i-1]
+                } else {
+                    FLASHING_BULBS[j][7]    // loop
+                };
+                let p_old = Point::new(c_old.0.into(), c_old.1.into());
+                let v_old = self.hwvideo.get_screen(p_old);
+                self.hwvideo.put_screen_tile(p, TILE2[j]);
+                self.hwvideo.put_screen_tile(p_old, v_old.0.next_flashing().unwrap());
+            }
+        }
     }
 
 
