@@ -1,4 +1,4 @@
-#[derive(PartialEq,Copy,Clone)]
+#[derive(PartialEq,PartialOrd,Copy,Clone)]
 pub enum CurrentTime {
     None = 0,
     LessTenth = 1,
@@ -35,9 +35,8 @@ pub struct Counter60Hz {
     // 0x07    1 hour     <= t < 10 hours
     // 0x08    10 hours   <= t < 100 hours
     // 0x09    100 hours  <= t
-
     // src:4c8a
-    task_timer: u8,
+    step_state: u8,
 
     // src:4c8b
     rand1: u8,
@@ -58,7 +57,7 @@ impl Counter60Hz {
             inc_counter: 0,
             dec_counter: 0,
             counter: [0; 4],
-            task_timer: 0,
+            step_state: 0,
             rand1: 0,
             rand2: 0,
         }
@@ -77,29 +76,25 @@ impl Counter60Hz {
         for i in 0..4 {
             self.counter[i] +=1;
 
-            if (self.counter[i] & 0xf) != LIMIT_60_HZ[i][0] { break };
-
-            c += 1;
-
-            self.counter[i] += 0x10;    // increment high quartet (1/10s, secs, mins, hours)
-            self.counter[i] &= 0xf0;    // reset low quartet counter
-
-            if self.counter[i] != LIMIT_60_HZ[i][1] { break };
-
-            c += 1;
-
-            self.counter[i] = 0;
-
+            if (self.counter[i] & 0xf) == LIMIT_60_HZ[i][0] {
+                c += 1;
+                self.counter[i] += 0x10;    // increment high quartet (1/10s, secs, mins, hours)
+                self.counter[i] &= 0xf0;    // reset low quartet counter
+                if self.counter[i] == LIMIT_60_HZ[i][1] {
+                    c += 1;
+                    self.counter[i] = 0;
+                }
+            }
         }
 
-        self.task_timer = c;
+        self.step_state = c;
 
         self.rand1 = self.rand1.wrapping_mul(5).wrapping_add(1);
         self.rand2 = self.rand2.wrapping_mul(13).wrapping_add(1);
     }
 
     pub fn get(&self) -> CurrentTime {
-        match self.task_timer {
+        match self.step_state {
             1 => CurrentTime::LessTenth,
             2 => CurrentTime::Tenth,
             3 => CurrentTime::Second,

@@ -1,8 +1,11 @@
-use crate::game::Game;
-use crate::game_counter::{CurrentTime, Counter60Hz};
-use crate::game_task::{TaskCoreE};
-use crate::text::{TextId};
+use std::collections::VecDeque;
 
+use crate::game::Game;
+use crate::game_counter::CurrentTime;
+use crate::game_task::TaskCoreE;
+use crate::text::TextId;
+
+// as near as possible than original software
 const MAX_TASKTIMED: usize = 16;
 
 #[derive(Copy, Clone)]
@@ -26,87 +29,78 @@ pub struct TaskTimedE {
     task:TaskTimedNameE,
 }
 
-pub struct GameTaskTimed {
-    /* src:4c90 */
-    tasks: [TaskTimedE; MAX_TASKTIMED],
+pub trait GameTaskTimed {
+    fn timed_task_new() -> VecDeque<TaskTimedE>;
+    fn timed_task_add(&mut self, unit: CurrentTime, counter: u8, t: TaskTimedNameE);
+    fn timed_task_execute(&mut self);
 }
 
-impl GameTaskTimed {
-    pub fn new() -> Self {
-        let empty_task = TaskTimedE {
-            unit: CurrentTime::None,
-            counter: 0,
-            task: TaskTimedNameE::IncreaseSubroutinePlayingState,
-        };
-
-        GameTaskTimed {
-            tasks: [empty_task; MAX_TASKTIMED],
-        }
+impl GameTaskTimed for Game {
+    fn timed_task_new() -> VecDeque<TaskTimedE> {
+        VecDeque::with_capacity(MAX_TASKTIMED)
     }
 
-    pub fn add(&mut self, unit: CurrentTime, counter: u8, t: TaskTimedNameE) {
-        for tasktimed in self.tasks.iter_mut() {
-            if tasktimed.unit == CurrentTime::None {
-                tasktimed.unit = unit;
-                tasktimed.counter = counter;
-                tasktimed.task = t;
-                break;
-            }
-        }
+    // src:0051
+    fn timed_task_add(&mut self, unit: CurrentTime, counter: u8, t: TaskTimedNameE) {
+        let task = TaskTimedE {
+            unit: unit,
+            counter: counter,
+            task: t,
+        };
+        self.timed_tasks.push_back(task);
     }
 
     // src:0221
-    fn execute_timed_task(&mut self, g: &mut Game) {
-        for tasktimed in self.tasks.iter_mut() {
-            if g.counter.get() == tasktimed.unit {
+    fn timed_task_execute(&mut self) {
+        for (pos, tasktimed) in self.timed_tasks.iter_mut().enumerate() {
+            if tasktimed.unit != CurrentTime::None && tasktimed.unit < self.counter.get() {
                 tasktimed.counter -= 1;
                 if tasktimed.counter == 0 {
-                    tasktimed.unit = CurrentTime::None;
+                    // self.timed_tasks.remove(pos);
                     match tasktimed.task {
                         // 0 src:0894
                         TaskTimedNameE::IncreaseSubroutinePlayingState => {
-                            g.subroutine_playing_state += 1;
+                            self.subroutine_playing_state += 1;
                         },        
                         // 1 src:06a3
                         TaskTimedNameE::IncreaseSubroutineCoinInsertedState => {
-                            g.subroutine_coin_inserted_state += 1;
+                            self.subroutine_coin_inserted_state += 1;
                         },
                         // 2 src:058e
                         TaskTimedNameE::IncreaseSubroutineDemoState => {
-                            g.subroutine_demo_state += 1;
+                            self.subroutine_demo_state += 1;
                         },
                         // 3 src:1272
                         TaskTimedNameE::IncreaseKilledGhostAnimationState => {
-                            g.killed_ghost_animation_state += 1;
+                            self.killed_ghost_animation_state += 1;
                         },
                         // 3 src:1000
                         TaskTimedNameE::ClearFruitPoints => {
-                            g.fruit_points = 0;
+                            self.fruit_points = 0;
                         },
                         // 4 src:100b
                         TaskTimedNameE::ClearFruitPosition => {
-                            g.fruit_coord = (0, 0);
+                            self.fruit_coord = (0, 0);
                         },
                         // 5 src:0263
                         TaskTimedNameE::ClearReadyMessage => {
-                            g.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Ready, true) );
+                            self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Ready, true) );
                         },
                         // 6 src:212b
                         TaskTimedNameE::IncreaseStateIn1stCutescene => {
-                            g.state_in_first_cutscene += 1;
+                            self.state_in_first_cutscene += 1;
                         },
                         // 7 src:21f0
                         TaskTimedNameE::IncreaseStateIn2ndCutescene => {
-                            g.state_in_second_cutscene += 1;
+                            self.state_in_second_cutscene += 1;
                         },
                         // 8 src:22b9
                         TaskTimedNameE::IncreaseStateIn3rdCutescene => {
-                            g.state_in_third_cutscene += 1;
+                            self.state_in_third_cutscene += 1;
                         },
                     }
                 }
             }
         }
     }
-
 }
