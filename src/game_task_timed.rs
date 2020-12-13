@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 
 use crate::game::Game;
+use crate::game_task::GameTask;
 use crate::game_counter::CurrentTime;
 use crate::game_task::TaskCoreE;
 use crate::text::TextId;
@@ -83,7 +84,7 @@ impl GameTaskTimed for Game {
                         },
                         // 6 src:0263
                         TaskTimedNameE::ClearReadyMessage => {
-                            self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Ready, true) );
+                            self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::Ready, true) );
                         },
                         // 7 src:212b
                         TaskTimedNameE::IncreaseStateIn1stCutescene => {

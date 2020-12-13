@@ -40,7 +40,8 @@ use palette::{PALETTE, ColorE};
 use tile::{TileId, Tile};
 use sprite::{SpriteId, Sprite};
 use text::{TextId, Text};
-use game::{Game};
+use game::Game;
+use game_task::GameTask;
 
 
 const SLOW_DOWN_GAME: u64 = 10000;
@@ -90,20 +91,6 @@ fn print_tile_heart(hwvideo: &mut GameHwVideo, x: i32, y:i32, c:ColorE) {
 // }
 
 fn main() -> Result<(), core::convert::Infallible> {
-    // let mut hwvideo = GameHwVideo::new_simulator();
-
-
-    // hwvideo.put_screen( Point { x:1, y:1 }, TileId::LetterA, ColorE::Yellow);
-    // hwvideo.put_sprite( 0, Point {x:32, y:32 }, SpriteId::ManStart, ColorE::Yellow);
-    // print_tile_big_mspacman(&mut hwvideo, 8, 8, ColorE::Yellow);
-    // print_tile_heart(&mut hwvideo, 16, 16, ColorE::Red);
-    // for i in 0..55 {
-    //     hwvideo.put_text_id(i);
-    // }
-
-    // let output_settings = OutputSettingsBuilder::new().scale(1).build();
-    // let mut window = Window::new("mspacmab", &output_settings);
-    // let mut g = Game::new(&mut hwvideo);
     let mut g = Game::new();
 
     // if test_mode(&mut g) == false {

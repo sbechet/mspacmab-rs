@@ -5,6 +5,7 @@ use crate::text::TextId;
 use crate::tile::TileId;
 
 use crate::game::Game;
+use crate::game_task::GameTask;
 use crate::game_playing::GamePlaying;
 use crate::game_task::{ TaskCoreE, ScreenPart };
 use crate::game_counter::CurrentTime;
@@ -39,12 +40,12 @@ impl GameAttract for Game {
             0 => {
                 // src:045f
                 // attract_mode_prepare_screen
-                self.task.add_to_task_list(TaskCoreE::ClearWholeScreenOrMaze(ScreenPart::Maze));
-                self.task.add_to_task_list(TaskCoreE::SelectMazeColor(0));
-                self.task.add_to_task_list(TaskCoreE::ResetSpritesToDefaultValues(false));
-                self.task.add_to_task_list(TaskCoreE::ClearFruitAndPacmanPosition);
+                self.tasks.push_back(TaskCoreE::ClearWholeScreenOrMaze(ScreenPart::Maze));
+                self.tasks.push_back(TaskCoreE::SelectMazeColor(0));
+                self.tasks.push_back(TaskCoreE::ResetSpritesToDefaultValues(false));
+                self.tasks.push_back(TaskCoreE::ClearFruitAndPacmanPosition);
                 // src:0585
-                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::MsPacman, false));
+                self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::MsPacman, false));
                 self.timed_task_add(CurrentTime::LessTenth, 10, TaskTimedNameE::IncreaseSubroutineAttractState);
                 // _then_ src:058e!
                 self.tt02_increase_subroutine_attract_state();
@@ -58,7 +59,7 @@ impl GameAttract for Game {
             2 => {
                 // src:3e8b
                 // attract_mode_display_MS_pacman
-                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::MsPacman, false));
+                self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::MsPacman, false));
                 // PATCH: remove a small bug in original code?
                 // self.flashing_bulbs_counter = 96;
                 self.tt02_increase_subroutine_attract_state();
@@ -71,13 +72,13 @@ impl GameAttract for Game {
             4 => {
                 // src:3ebd
                 // attract_mode_display_with
-                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::With, false));
+                self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::With, false));
                 self.tt02_increase_subroutine_attract_state();
             },
             5 => {
                 // src:3e9c
                 // attract_mode_display_Blinky
-                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Blinky, false));
+                self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::Blinky, false));
                 self.tt02_increase_subroutine_attract_state();
             },
             6 => {
@@ -89,8 +90,8 @@ impl GameAttract for Game {
             7 => {
                 // src:3ea2
                 // attract_mode_clear_with_display_Pinky
-                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Space, false));
-                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Pinky, false));
+                self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::Space, false));
+                self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::Pinky, false));
                 self.tt02_increase_subroutine_attract_state();
             },
             8 => {
@@ -102,7 +103,7 @@ impl GameAttract for Game {
             9 => {
                 // src:3eab
                 // attract_mode_display_Inky
-                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Inky, false));
+                self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::Inky, false));
                 self.tt02_increase_subroutine_attract_state();
             },
             10 => {
@@ -114,7 +115,7 @@ impl GameAttract for Game {
             11 => {
                 // src:3eb1
                 // attract_mode_display_Sue
-                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Sue, false));
+                self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::Sue, false));
                 self.tt02_increase_subroutine_attract_state();
             },
             12 => {
@@ -126,13 +127,13 @@ impl GameAttract for Game {
             13 => {
                 // src:3ec3
                 // attract_mode_display_Starring
-                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Starring, false));
+                self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::Starring, false));
                 self.tt02_increase_subroutine_attract_state();
             },
             14 => {
                 // src:3eb7
                 // attract_mode_display_Ms_pacman
-                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::MsPacMan, false));
+                self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::MsPacMan, false));
                 self.tt02_increase_subroutine_attract_state();
             },
             15 => {
@@ -202,8 +203,8 @@ impl GameAttract for Game {
     // draws title screen logo and text (sets as tasks).
     // src:9642
     fn draw_the_midway_logo_and_copyright(&mut self) {
-        self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::CMidwayMfgCo, false));
-        self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Year19801981, false));
+        self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::CMidwayMfgCo, false));
+        self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::Year19801981, false));
 
         let x = 6;
         let y = 28;
