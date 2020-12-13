@@ -11,7 +11,7 @@ use embedded_graphics_simulator::{
 };
 
 use std::thread;
-use std::time::Duration;
+use std::time::{ Instant, Duration };
 
 mod mspacmab_data;
 mod mspacmab_data_maze;
@@ -41,6 +41,8 @@ use sprite::{SpriteId, Sprite};
 use text::{TextId, Text};
 use game::{Game};
 
+
+const SLOW_DOWN_GAME: u64 = 10000;
 
 // big ms-pacman
 fn print_tile_big_mspacman(hwvideo: &mut GameHwVideo, x: i32, y:i32, c:ColorE) {
@@ -103,10 +105,11 @@ fn main() -> Result<(), core::convert::Infallible> {
     // let mut g = Game::new(&mut hwvideo);
     let mut g = Game::new();
 
-    if test_mode(&mut g) == false {
-        return Ok(());
-    }
-    println!("Return from test_mode()");
+    // if test_mode(&mut g) == false {
+    //     return Ok(());
+    // }
+    // println!("Return from test_mode()");
+
     g.hwoutput.sound_enabled = true;
     g.hwoutput.flip_screen = false;
     g.hwoutput.lamp1 = false;
@@ -121,14 +124,23 @@ fn main() -> Result<(), core::convert::Infallible> {
     // let mut line = String::new();
     // let _input = std::io::stdin().read_line(&mut line).expect("Failed to read line");
 
+    let mut vblank_time = Instant::now();
+
     'running: loop {
         if g.hwinput.update(&mut g.hwvideo.window) == false {
             break;
         }
         // 60Hz
-        thread::sleep(Duration::from_millis(10000*1/60));   // TODO: Change for real-timer
-        g.timed_60_hz();
-        g.update();
+        let now = Instant::now();
+        if now >= vblank_time {
+            vblank_time = now + Duration::from_millis(SLOW_DOWN_GAME * 1/60); // remove 10000 for real speed
+            println!("<VBlank>");
+            g.timed_60_hz();
+            g.update();
+        }
+
+        // we assume no more than 1/60 / 10 for idle time
+        thread::sleep(Duration::from_millis(1/60 / 10));
         g.idle();
     }
 

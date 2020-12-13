@@ -41,7 +41,7 @@ pub struct GameHwVideo {
 impl GameHwVideo {
     pub fn new() -> Self {
         let display: SimulatorDisplay<Rgb888> = SimulatorDisplay::new(Size::new(WIDTH as u32 * 8, HEIGHT as u32 * 8));
-        let output_settings = OutputSettingsBuilder::new().scale(2).build();
+        let output_settings = OutputSettingsBuilder::new().scale(4).build();
 
         GameHwVideo {
             window: Window::new("mspacmab", &output_settings),

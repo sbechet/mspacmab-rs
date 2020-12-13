@@ -1,4 +1,4 @@
-#[derive(PartialEq,PartialOrd,Copy,Clone)]
+#[derive(PartialEq,PartialOrd,Copy,Clone, Debug)]
 pub enum CurrentTime {
     None = 0,
     LessTenth = 1,

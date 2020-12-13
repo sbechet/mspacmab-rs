@@ -590,9 +590,9 @@ impl Game {
                             }
                         }
 
-                        for x in 16..=27 {
-                            self.hwvideo.put_screen_color(Point::new(x, 0), ColorE::Black); // HACK: Original was = 0x40 (for "tunnel slowdown"?)
-                        }
+                        // for x in 16..=27 {
+                        //     self.hwvideo.put_screen_color(Point::new(x, 0), ColorE::Black); // HACK: Original was = 0x40 (for "tunnel slowdown"?)
+                        // }
 
                         if playing_state==1 {
                             // src:95c3
@@ -907,7 +907,7 @@ impl Game {
             // clean:4040->423f - history: (27, 2) -> (12, 33)
             // calculated: (12, 2) -> (27, 33)
             ScreenPart::Maze => {
-                // for x in 12..=27 {   // BUG? Only 1/2 screen... can't understand original binary code
+                // for x in 12..=27 {   // BUG? Only 1/2 screen... not sure about original ROM code
                 for x in 0..=27 {
                     for y in 2..=33 {
                         self.hwvideo.put_screen_tile(Point::new(x as i32,y as i32), TileId::Space);

@@ -5,7 +5,7 @@ use crate::text::TextId;
 use crate::tile::TileId;
 
 use crate::game::Game;
-use crate::game_task::TaskCoreE;
+use crate::game_task::{ TaskCoreE, ScreenPart };
 use crate::game_counter::CurrentTime;
 use crate::game_task_timed::{ TaskTimedNameE, GameTaskTimed };
 
@@ -27,23 +27,30 @@ impl GameDemo for Game {
     fn execute_demo_task_state_patch(&mut self) {
 
         if self.subroutine_demo_state != 16 {
-            self.flashing_bulbs_around_the_marquee();
+            // PATCH: must remove 0 demo_state else maze cleared but 
+            // flashing bulbs fn started on recent hardware! 
+            if self.subroutine_demo_state != 0 {    
+                self.flashing_bulbs_around_the_marquee();
+            }
         }
 
         match self.subroutine_demo_state {
             0 => {
                 // src:045f
                 // demo_mode_prepare_screen
-                // TODO: bug! self.task.add_to_task_list(TaskCoreE::ClearWholeScreenOrMaze(ScreenPart::Maze));
-                // self.task.add_to_task_list(TaskCoreE::SelectMazeColor(0));
+                self.task.add_to_task_list(TaskCoreE::ClearWholeScreenOrMaze(ScreenPart::Maze));
+                self.task.add_to_task_list(TaskCoreE::SelectMazeColor(0));
                 self.task.add_to_task_list(TaskCoreE::ResetSpritesToDefaultValues(false));
                 self.task.add_to_task_list(TaskCoreE::ClearFruitAndPacmanPosition);
                 // src:0585
                 self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::MsPacman, false));
                 self.timed_task_add(CurrentTime::LessTenth, 10, TaskTimedNameE::IncreaseSubroutineDemoState);
+                // _then_ src:058e!
+                self.tt02_increase_subroutine_demo_state();
             },
             1 => {
                 // src:3e96
+                // demo_mode_draw_the_midway_logo_and_copyright
                 self.draw_the_midway_logo_and_copyright();
                 self.tt02_increase_subroutine_demo_state();
             }
@@ -51,21 +58,37 @@ impl GameDemo for Game {
                 // src:3e8b
                 // demo_mode_display_MS_pacman
                 self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::MsPacman, false));
-                self.flashing_bulbs_counter = 96;
-                self.tt02_increase_subroutine_demo_state();                
+                // PATCH: Maybe a bug in original code?
+                // self.flashing_bulbs_counter = 96;
+                self.tt02_increase_subroutine_demo_state();
             }
+            3 => {
+                // src:000c
+                // RET
+                // Here we wait for timer
+            },
+            4 => {
+                // src:3ebd
+                // demo_mode_display_with
+                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::With, false));
+                self.tt02_increase_subroutine_demo_state();
+            },
+            5 => {
+                // src:3e9c
+                // demo_mode_display_Blinky
+                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Blinky, false));
+                self.tt02_increase_subroutine_demo_state();
+            },
+            6 => {
+                // src:3483
+                // demo_mode_move_Blinky_around
+                //intermissions_and_attract_mode_animation_main_routine(0x24);
+            },
             _ => {},
         }
             // TODO
         /*
         // match self.subroutine_demo_state {
-            demo_mode_prepare_screen
-            demo_mode_draw_the_midway_logo_and_copyright
-            demo_mode_display_MS_pacman
-            RET
-            demo_mode_display_with
-            demo_mode_display_Blinky
-            demo_mode_move_Blinky_around
             demo_mode_clear_with_display_Pinky
             demo_mode_move_Pinky_across
             demo_mode_display_Inky
