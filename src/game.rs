@@ -18,7 +18,7 @@ use crate::palette::{PALETTE, ColorE};
 use crate::tile::{TileId, Tile};
 use crate::sprite::{SpriteId, Sprite};
 use crate::text::{TextId, Text};
-use crate::game_demo::GameDemo;
+use crate::game_attract::GameAttract;
 use crate::game_playing::GamePlaying;
 use crate::game_task::{GameTask, TaskCoreE, ScreenPart};
 use crate::game_task_timed::{GameTaskTimed, TaskTimedNameE, TaskTimedE};
@@ -27,7 +27,7 @@ use crate::mspacmab_data_fruit::{ FruitId, FRUIT};
 
 pub enum MainStateE {
     Init=0,
-    Demo=1,
+    Attract=1,
     CoinInserted=2,
     Playing=3,
 }
@@ -131,7 +131,7 @@ pub struct Game {
     // src:4e01
     pub subroutine_init_state: u8,
     // src:4e02
-    pub subroutine_demo_state: u8,  // 0.. 16
+    pub subroutine_attract_state: u8,  // 0.. 16
     // src:4e03
     pub subroutine_coin_inserted_state: u8,
     // src:4e04
@@ -212,7 +212,7 @@ impl Game {
             mode: MainStateE::Init,                        // src:4e00
             subroutine_init_state: 0,                      // src:4e01
 
-            subroutine_demo_state: 0,
+            subroutine_attract_state: 0,
             subroutine_coin_inserted_state: 0,
             subroutine_playing_state: 0,
             
@@ -348,21 +348,21 @@ impl Game {
                     self.task.add_to_task_list(TaskCoreE::ResetThenPrintPlayersScore);
                     self.task.add_to_task_list(TaskCoreE::ResetSpritesToDefaultValues(true));
                     self.task.add_to_task_list(TaskCoreE::ClearFruitAndPacmanPosition);
-                    self.task.add_to_task_list(TaskCoreE::SetGameToDemoMode);
+                    self.task.add_to_task_list(TaskCoreE::SetGameToAttractMode);
                     self.subroutine_init_state = 1;
                     self.hwoutput.sound_enabled = true;
                 }
             },
-            MainStateE::Demo => {
+            MainStateE::Attract => {
                 /* src:03fe */
-                println!("change_mode/Demo");
+                println!("change_mode/Attract");
                 self.t1d_draw_credit_qty();
                 if self.number_of_credits != 0 {
                     self.mode = MainStateE::CoinInserted;   // +=1
-                    self.subroutine_demo_state = 0;
+                    self.subroutine_attract_state = 0;
                     self.subroutine_playing_state = 0;
                 } else {
-                    self.execute_demo_task_state_patch();
+                    self.execute_attract_task_state_patch();
                 }
             },
             MainStateE::CoinInserted => {
@@ -451,7 +451,7 @@ impl Game {
                         self.current_player.number_of_lives_displayed -= 1;
                         self.t1a_draw_remaining_lives_bottom_screen();
                         self.mode = MainStateE::Playing;
-                        self.subroutine_demo_state = 0;
+                        self.subroutine_attract_state = 0;
                         self.subroutine_coin_inserted_state = 0;
                         self.subroutine_playing_state = 0;
                     },
@@ -572,7 +572,7 @@ impl Game {
                         /* controls the color of the mazes */
                         let color = match playing_state {
                             2 => ColorE::White, // white color for flashing at end of level
-                            _ => match self.subroutine_demo_state {
+                            _ => match self.subroutine_attract_state {
                                 0 | 16 => {
                                     let mut n = self.current_player.level as usize;
                                     while n > 20 {
@@ -775,7 +775,7 @@ impl Game {
                             self.man_orientation = Direction::Left;
                             self.wanted_man_orientation = Direction::Left;
 
-                            // pacman_tile_pos_in_demo_and_cut_scenes
+                            // pacman_tile_pos_in_attract_and_cut_scenes
                             self.man_next_tile = (31, 50);
 
                             // pacman_position_tile_position
@@ -789,9 +789,9 @@ impl Game {
                         self.clear_color_ram();
                     },
                     // 7 src:2698
-                    TaskCoreE::SetGameToDemoMode => {
-                        println!("TaskCoreE::SetGameToDemoMode");
-                        self.mode = MainStateE::Demo;
+                    TaskCoreE::SetGameToAttractMode => {
+                        println!("TaskCoreE::SetGameToAttractMode");
+                        self.mode = MainStateE::Attract;
                         self.subroutine_init_state = 0;
                     },
                     // 18 src:24c9
@@ -1050,7 +1050,7 @@ impl Game {
 
     // src:2b6a
     fn t1a_draw_remaining_lives_bottom_screen(&mut self) {
-        if let MainStateE::Demo = self.mode {
+        if let MainStateE::Attract = self.mode {
             return;   // do not update screen
         }
         self.set_bottom_left_background_to_yellow();
@@ -1163,7 +1163,7 @@ impl Game {
 
     // src:2bea
     fn draw_fruits_bottom_right_screen(&mut self) -> bool {
-        if let MainStateE::Demo = self.mode {
+        if let MainStateE::Attract = self.mode {
             return false;   // do not update screen
         }
         let level:usize = if self.current_player.level > 7 {

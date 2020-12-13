@@ -28,7 +28,7 @@ mod sprite;
 mod sprite_element;
 mod text;
 mod test_mode;
-mod game_demo;
+mod game_attract;
 mod game_playing;
 mod game_task;
 mod game_task_timed;

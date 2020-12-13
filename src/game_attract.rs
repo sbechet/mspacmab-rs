@@ -10,58 +10,58 @@ use crate::game_task::{ TaskCoreE, ScreenPart };
 use crate::game_counter::CurrentTime;
 use crate::game_task_timed::{ TaskTimedNameE, GameTaskTimed };
 
-pub trait GameDemo {
-    fn tt02_increase_subroutine_demo_state(&mut self);
-    fn execute_demo_task_state_patch(&mut self);
+pub trait GameAttract {
+    fn tt02_increase_subroutine_attract_state(&mut self);
+    fn execute_attract_task_state_patch(&mut self);
     fn flashing_bulbs_around_the_marquee(&mut self);
     fn draw_the_midway_logo_and_copyright(&mut self);
 }
 
-impl GameDemo for Game {
+impl GameAttract for Game {
 
     // src:058e
-    fn tt02_increase_subroutine_demo_state(&mut self) {
-        self.subroutine_demo_state += 1;
+    fn tt02_increase_subroutine_attract_state(&mut self) {
+        self.subroutine_attract_state += 1;
     }
 
     // src:3e5c
-    fn execute_demo_task_state_patch(&mut self) {
+    fn execute_attract_task_state_patch(&mut self) {
 
-        if self.subroutine_demo_state != 16 {
-            // PATCH: must remove 0 demo_state else maze cleared but 
+        if self.subroutine_attract_state != 16 {
+            // PATCH: must remove 0 attract_state else maze cleared but 
             // flashing bulbs fn started on recent hardware! 
-            if self.subroutine_demo_state != 0 {    
+            if self.subroutine_attract_state != 0 {    
                 self.flashing_bulbs_around_the_marquee();
             }
         }
 
-        match self.subroutine_demo_state {
+        match self.subroutine_attract_state {
             0 => {
                 // src:045f
-                // demo_mode_prepare_screen
+                // attract_mode_prepare_screen
                 self.task.add_to_task_list(TaskCoreE::ClearWholeScreenOrMaze(ScreenPart::Maze));
                 self.task.add_to_task_list(TaskCoreE::SelectMazeColor(0));
                 self.task.add_to_task_list(TaskCoreE::ResetSpritesToDefaultValues(false));
                 self.task.add_to_task_list(TaskCoreE::ClearFruitAndPacmanPosition);
                 // src:0585
                 self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::MsPacman, false));
-                self.timed_task_add(CurrentTime::LessTenth, 10, TaskTimedNameE::IncreaseSubroutineDemoState);
+                self.timed_task_add(CurrentTime::LessTenth, 10, TaskTimedNameE::IncreaseSubroutineAttractState);
                 // _then_ src:058e!
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             },
             1 => {
                 // src:3e96
-                // demo_mode_draw_the_midway_logo_and_copyright
+                // attract_mode_draw_the_midway_logo_and_copyright
                 self.draw_the_midway_logo_and_copyright();
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             }
             2 => {
                 // src:3e8b
-                // demo_mode_display_MS_pacman
+                // attract_mode_display_MS_pacman
                 self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::MsPacman, false));
                 // PATCH: remove a small bug in original code?
                 // self.flashing_bulbs_counter = 96;
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             }
             3 => {
                 // src:000c
@@ -70,80 +70,80 @@ impl GameDemo for Game {
             },
             4 => {
                 // src:3ebd
-                // demo_mode_display_with
+                // attract_mode_display_with
                 self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::With, false));
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             },
             5 => {
                 // src:3e9c
-                // demo_mode_display_Blinky
+                // attract_mode_display_Blinky
                 self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Blinky, false));
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             },
             6 => {
                 // src:3483
-                // demo_mode_move_Blinky_around
+                // attract_mode_move_Blinky_around
                 //TODO:intermissions_and_attract_mode_animation_main_routine(0x24);
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             },
             7 => {
                 // src:3ea2
-                // demo_mode_clear_with_display_Pinky
+                // attract_mode_clear_with_display_Pinky
                 self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Space, false));
                 self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Pinky, false));
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             },
             8 => {
                 // src:3488
-                // demo_mode_move_Pinky_across
+                // attract_mode_move_Pinky_across
                 //TODO: intermissions_and_attract_mode_animation_main_routine(0x30);
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             },
             9 => {
                 // src:3eab
-                // demo_mode_display_Inky
+                // attract_mode_display_Inky
                 self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Inky, false));
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             },
             10 => {
                 // src:348d
-                // demo_mode_move_Inky_across
+                // attract_mode_move_Inky_across
                 //TODO: intermissions_and_attract_mode_animation_main_routine(0x3c);
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             },
             11 => {
                 // src:3eb1
-                // demo_mode_display_Sue
+                // attract_mode_display_Sue
                 self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Sue, false));
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             },
             12 => {
                 // src:3492
-                // demo_mode_move_Sue_across
+                // attract_mode_move_Sue_across
                 // TODO: intermissions_and_attract_mode_animation_main_routine(0x48);
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             },
             13 => {
                 // src:3ec3
-                // demo_mode_display_Starring
+                // attract_mode_display_Starring
                 self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Starring, false));
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             },
             14 => {
                 // src:3eb7
-                // demo_mode_display_Ms_pacman
+                // attract_mode_display_Ms_pacman
                 self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::MsPacMan, false));
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             },
             15 => {
                 // src:3497
-                // demo_mode_move_mspacman_across
+                // attract_mode_move_mspacman_across
                 // TODO: intermissions_and_attract_mode_animation_main_routine(0x54);
-                self.tt02_increase_subroutine_demo_state();
+                self.tt02_increase_subroutine_attract_state();
             },
             16 => {
                 // src:3ec9
-                // demo_mode_start_demo_mode_where_mspacman_plays_herself
+                // attract_mode_start_attract_mode_where_mspacman_plays_herself
                 self.current_player.real_number_of_lives = 0;
                 // src:057c
                 self.execute_playing_task_state();

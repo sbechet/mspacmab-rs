@@ -12,7 +12,7 @@ const MAX_TASKTIMED: usize = 16;
 pub enum TaskTimedNameE {
     IncreaseSubroutinePlayingState,             // 0 src:0894
     IncreaseSubroutineCoinInsertedState,        // 1 src:06a3
-    IncreaseSubroutineDemoState,                // 2 src:058e
+    IncreaseSubroutineAttractState,             // 2 src:058e
     IncreaseKilledGhostAnimationState,          // 3 src:1272
     ClearFruitPoints,                           // 4 src:1000
     ClearFruitPosition,                         // 5 src:100b
@@ -66,8 +66,8 @@ impl GameTaskTimed for Game {
                             self.subroutine_coin_inserted_state += 1;
                         },
                         // 2 src:058e
-                        TaskTimedNameE::IncreaseSubroutineDemoState => {
-                            self.subroutine_demo_state += 1;
+                        TaskTimedNameE::IncreaseSubroutineAttractState => {
+                            self.subroutine_attract_state += 1;
                         },
                         // 3 src:1272
                         TaskTimedNameE::IncreaseKilledGhostAnimationState => {

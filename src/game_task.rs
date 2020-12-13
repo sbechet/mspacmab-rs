@@ -21,7 +21,7 @@ pub enum TaskCoreE {
     ResetSpritesToDefaultValues(bool),      //  4 src:253d (bool game_start)
     ResetGhostHomeCounter,                  //  5 src:268b
     ClearColorRam,                          //  6 src:240d (void)
-    SetGameToDemoMode,                      //  7 src:2698 (void)
+    SetGameToAttractMode,                   //  7 src:2698 (void)
     RedGhostAi,                             //  8 src:2730
     PinkGhostAi,                            //  9 src:276c
     BlueGhostAi,                            // 10 src:27a9
@@ -37,7 +37,7 @@ pub enum TaskCoreE {
     SetupConfigFromDipSwitches,             // 20 src:26d0 (void)
     UpdateScreenPillConfigToVideoRam,       // 21 src:2487
     IncreaseMainSubroutineNumber,           // 22 src:23e8
-    PacmanAiMovementWhenDemo,               // 23 src:28e3
+    PacmanAiMovementWhenAttract,            // 23 src:28e3
     ResetThenPrintPlayersScore,             // 24 src:2ae0 (void)
     UpdateScoreThenDraw,                    // 25 src:2a5a
     DrawRemainingLivesBottomLeftScreen,     // 26 src:2b6a
