@@ -19,6 +19,7 @@ use crate::tile::{TileId, Tile};
 use crate::sprite::{SpriteId, Sprite};
 use crate::text::{TextId, Text};
 use crate::game_demo::GameDemo;
+use crate::game_playing::GamePlaying;
 use crate::game_task::{GameTask, TaskCoreE, ScreenPart};
 use crate::game_task_timed::{GameTaskTimed, TaskTimedNameE, TaskTimedE};
 use crate::mspacmab_data_maze::{ MAZE, PELLET, POWER_PILL};
@@ -45,7 +46,7 @@ pub struct DataPlayer {
     // src:4e13, src:4e41
     level: u8,          // 0..
     // src:4e14, src:4e42
-    real_number_of_lives: u8,
+    pub real_number_of_lives: u8,
     // src:4e15, src:4e43
     number_of_lives_displayed: u8,
     // src:4e16, src:4e44
@@ -460,6 +461,7 @@ impl Game {
             MainStateE::Playing => {
                 /* src:06be */
                 println!("change_mode/Playing");
+                self.execute_playing_task_state();
             },
         }
     }

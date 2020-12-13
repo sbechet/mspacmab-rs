@@ -5,6 +5,7 @@ use crate::text::TextId;
 use crate::tile::TileId;
 
 use crate::game::Game;
+use crate::game_playing::GamePlaying;
 use crate::game_task::{ TaskCoreE, ScreenPart };
 use crate::game_counter::CurrentTime;
 use crate::game_task_timed::{ TaskTimedNameE, GameTaskTimed };
@@ -58,7 +59,7 @@ impl GameDemo for Game {
                 // src:3e8b
                 // demo_mode_display_MS_pacman
                 self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::MsPacman, false));
-                // PATCH: Maybe a bug in original code?
+                // PATCH: remove a small bug in original code?
                 // self.flashing_bulbs_counter = 96;
                 self.tt02_increase_subroutine_demo_state();
             }
@@ -82,25 +83,73 @@ impl GameDemo for Game {
             6 => {
                 // src:3483
                 // demo_mode_move_Blinky_around
-                //intermissions_and_attract_mode_animation_main_routine(0x24);
+                //TODO:intermissions_and_attract_mode_animation_main_routine(0x24);
+                self.tt02_increase_subroutine_demo_state();
             },
-            _ => {},
+            7 => {
+                // src:3ea2
+                // demo_mode_clear_with_display_Pinky
+                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Space, false));
+                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Pinky, false));
+                self.tt02_increase_subroutine_demo_state();
+            },
+            8 => {
+                // src:3488
+                // demo_mode_move_Pinky_across
+                //TODO: intermissions_and_attract_mode_animation_main_routine(0x30);
+                self.tt02_increase_subroutine_demo_state();
+            },
+            9 => {
+                // src:3eab
+                // demo_mode_display_Inky
+                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Inky, false));
+                self.tt02_increase_subroutine_demo_state();
+            },
+            10 => {
+                // src:348d
+                // demo_mode_move_Inky_across
+                //TODO: intermissions_and_attract_mode_animation_main_routine(0x3c);
+                self.tt02_increase_subroutine_demo_state();
+            },
+            11 => {
+                // src:3eb1
+                // demo_mode_display_Sue
+                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Sue, false));
+                self.tt02_increase_subroutine_demo_state();
+            },
+            12 => {
+                // src:3492
+                // demo_mode_move_Sue_across
+                // TODO: intermissions_and_attract_mode_animation_main_routine(0x48);
+                self.tt02_increase_subroutine_demo_state();
+            },
+            13 => {
+                // src:3ec3
+                // demo_mode_display_Starring
+                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::Starring, false));
+                self.tt02_increase_subroutine_demo_state();
+            },
+            14 => {
+                // src:3eb7
+                // demo_mode_display_Ms_pacman
+                self.task.add_to_task_list(TaskCoreE::DrawTextOrGraphics(TextId::MsPacMan, false));
+                self.tt02_increase_subroutine_demo_state();
+            },
+            15 => {
+                // src:3497
+                // demo_mode_move_mspacman_across
+                // TODO: intermissions_and_attract_mode_animation_main_routine(0x54);
+                self.tt02_increase_subroutine_demo_state();
+            },
+            16 => {
+                // src:3ec9
+                // demo_mode_start_demo_mode_where_mspacman_plays_herself
+                self.current_player.real_number_of_lives = 0;
+                // src:057c
+                self.execute_playing_task_state();
+            },
+        _ => {},
         }
-            // TODO
-        /*
-        // match self.subroutine_demo_state {
-            demo_mode_clear_with_display_Pinky
-            demo_mode_move_Pinky_across
-            demo_mode_display_Inky
-            demo_mode_move_Inky_across
-            demo_mode_display_Sue
-            demo_mode_move_Sue_across
-            demo_mode_display_Starring
-            demo_mode_display_Ms_pacman
-            demo_mode_move_mspacman_across
-            demo_mode_start_demo_mode_where_mspacman_plays_herself
-        // }
-        */
     }
 
     // This sub controls the flashing bulbs around the marquee in the attract screen 
