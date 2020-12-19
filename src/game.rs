@@ -1,9 +1,7 @@
 use std::collections::VecDeque;
 use num_traits::FromPrimitive;
 
-use embedded_graphics::{
-    prelude::*,
-};
+use embedded_graphics::prelude::*;
 
 use embedded_graphics_simulator::{
     Window, 
@@ -18,12 +16,14 @@ use crate::palette::{PALETTE, ColorE};
 use crate::tile::{TileId, Tile};
 use crate::sprite::{SpriteId, Sprite};
 use crate::text::{TextId, Text};
+use crate::game_animation::{ GameAnimationT, Instruction, NO_DATA, NO_SPRITES };
 use crate::game_attract::GameAttract;
 use crate::game_playing::GamePlaying;
 use crate::game_task::{GameTask, TaskCoreE, ScreenPart};
 use crate::game_task_timed::{GameTaskTimed, TaskTimedNameE, TaskTimedE};
 use crate::mspacmab_data_maze::{ MAZE, PELLET, POWER_PILL};
 use crate::mspacmab_data_fruit::{ FruitId, FRUIT};
+
 
 pub enum MainStateE {
     Init=0,
@@ -55,21 +55,24 @@ pub struct DataPlayer {
     power_pills_data_entries: [TileId; 4],
 }
 
+pub enum SpriteName {
+    Red=0,
+    Pink=1,
+    Blue=2,
+    Orange=3,
+    Man=4,
+    Fruit=5,
+}
+
 pub struct Game {
     pub hwvideo: GameHwVideo,
     pub hwinput: HardwareInput,
     pub hwoutput: HardwareOutput,
     pub counter: Counter60Hz,
 
-    // src:4c00
-    // unknown: SpriteElement,
-    pub red_ghost: SpriteElement,
-    pub pink_ghost: SpriteElement,
-    pub blue_ghost: SpriteElement,
-    pub orange_ghost: SpriteElement,
-    pub man: SpriteElement,
-    pub fruit: SpriteElement,
-    // unknown2: SpriteElement,
+    // src:4c00 src:4d00 for first five
+    // src:4dd2 for last one (0 = no fruit. TODO: Use Option Here?)
+    pub sprite: [SpriteElement; 6],
 
     pub red_ghost_current_tile: (i8, i8),
     pub pink_ghost_current_tile: (i8, i8),
@@ -119,10 +122,13 @@ pub struct Game {
     // src:4c90
     pub timed_tasks: VecDeque<TaskTimedE>,
 
+    // src:4da4
+    pub number_of_ghost_killed_but_no_collision_for_yet: u8,
+    // src:4da5
+    pub ghost_eat_ability: bool,
+
     // src:4dd1 FRUITP  fruit position
     pub killed_ghost_animation_state: i8,
-    // src:4dd2 FVALUE  value of the current fruit (0=no fruit)
-    pub fruit_coord: (i8, i8),
     // src:4dd4
     pub fruit_points: i8,
     // src:4dd5 emtpy
@@ -188,10 +194,24 @@ pub struct Game {
     wave: [Wave; 3],
 
     // src:4f00
-    pub intermission_mode: bool,
+    // pub animation: GameAnimationT,
+    pub animation_enable: bool,
 
     // src:4f01
     pub flashing_bulbs_counter: u8,
+
+    // src:4f02
+    pub animation_current: [ (&'static [Instruction], usize) ; 6],
+    // src:4f0f
+    pub animation_cmd_table_sprite_index: [ u8; 8],
+    // src:4f17
+    pub animation_cmd_table_delay: [ u8; 8],
+    // src:4f1f
+    pub animation_cmd_table_stop:  [bool; 6],
+    // src:4f2e
+    pub animation_cmd_table_f0_loop: [ (i8,i8); 6],
+    // src:4f3e
+    pub animation_cmd_table_sprite: [ &'static [SpriteId]; 8],
 
     // src:4e8c, src:4e92, src:4e97
     // src:4e9c, src:4eac, src:4ebc
@@ -235,12 +255,14 @@ impl Game {
             p2_got_bonus_life: false,
             high_score: 0,
 
-            red_ghost: SpriteElement::new_red_ghost(),
-            pink_ghost: SpriteElement::new_pink_ghost(),
-            blue_ghost: SpriteElement::new_blue_ghost(),
-            orange_ghost: SpriteElement::new_orange_ghost(),
-            man: SpriteElement::new_man(),
-            fruit: SpriteElement::new_fruit(),
+            sprite: [
+                SpriteElement::new_red_ghost(),
+                SpriteElement::new_pink_ghost(),
+                SpriteElement::new_blue_ghost(),
+                SpriteElement::new_orange_ghost(),
+                SpriteElement::new_man(),
+                SpriteElement::new_fruit(),
+            ],
 
             red_ghost_current_tile: (0,0),
             pink_ghost_current_tile: (0,0),
@@ -287,9 +309,11 @@ impl Game {
             tasks: VecDeque::new(),
             timed_tasks: Self::timed_task_new(),
 
+            number_of_ghost_killed_but_no_collision_for_yet: 0,
+            ghost_eat_ability: false,
+
             killed_ghost_animation_state: 0,
 
-            fruit_coord: (0,0),
             fruit_points: 0,
 
             state_in_first_cutscene: 0,
@@ -315,21 +339,25 @@ impl Game {
             wave: [Wave::new(); 3],
 
             // Is set to true during intermissions and parts of the attract mode, otherwise false
-            intermission_mode: false,
+            animation_enable: false,
 
             flashing_bulbs_counter: 0,
+
+            animation_current: [ (&NO_DATA,0); 6],
+            animation_cmd_table_sprite_index: [ 0; 8],
+            animation_cmd_table_delay: [ 0; 8],
+            animation_cmd_table_stop:  [false; 6],
+            animation_cmd_table_f0_loop: [ (0,0); 6],
+            animation_cmd_table_sprite: [ &NO_SPRITES; 8],
 
         }
     }
 
     /// push on "real" hardware
     pub fn update(&mut self) {
-        self.hwvideo.put_sprite(1,    self.red_ghost.p,    self.red_ghost.s,    self.red_ghost.c);
-        self.hwvideo.put_sprite(2,   self.pink_ghost.p,   self.pink_ghost.s,   self.pink_ghost.c);
-        self.hwvideo.put_sprite(3,   self.blue_ghost.p,   self.blue_ghost.s,   self.blue_ghost.c);
-        self.hwvideo.put_sprite(4, self.orange_ghost.p, self.orange_ghost.s, self.orange_ghost.c);
-        self.hwvideo.put_sprite(5,          self.man.p,          self.man.s,          self.man.c);
-        self.hwvideo.put_sprite(6,        self.fruit.p,        self.fruit.s,        self.fruit.c);
+        for i in 0..6 {
+            self.hwvideo.put_sprite(i+1, self.sprite[i].p, self.sprite[i].s, self.sprite[i].c);
+        }
         self.hwvideo.update();
     }
 
@@ -524,7 +552,7 @@ impl Game {
 
         // 8. MSPACMAN intermission
         //     see backup_sprites__then__check_cocktail_animation_end();
-        //     if intermission_mode {
+        //     if animation_enable {
         //         copy sprites informations to intermisson buffer
         //     }
         //     ..
@@ -592,21 +620,18 @@ impl Game {
 
     // src:2675 (void)
     pub fn clear_fruit_and_pacman_position(&mut self) {
-        self.fruit_coord = (0, 0);
-        // pacman_coord
-        self.man.p = Point::new(0,0);
+        self.sprite[SpriteName::Fruit as usize].p = Point::new(0,0);
+        self.sprite[SpriteName::Man as usize].p = Point::new(0,0);
         self.clear_all_ghosts_from_screen();
     }
 
     // src: 267e
     fn clear_all_ghosts_from_screen(&mut self) {
-        // sprites_coord_yx
-        self.red_ghost.p = Point::new(0,0);
-        self.pink_ghost.p = Point::new(0,0);
-        self.blue_ghost.p = Point::new(0,0);
-        self.orange_ghost.p = Point::new(0,0);
+        self.sprite[SpriteName::Red as usize].p = Point::new(0,0);
+        self.sprite[SpriteName::Pink as usize].p = Point::new(0,0);
+        self.sprite[SpriteName::Blue as usize].p = Point::new(0,0);
+        self.sprite[SpriteName::Orange as usize].p = Point::new(0,0);
     }
-
 
     // src:2abe
     pub fn draw_score_to_screen(&mut self, score:u32, p:(u8, u8) ) {
@@ -863,8 +888,6 @@ impl Game {
     // pub fn hw_sound(&self, enable:bool) {
 
     // }
-
-
 
 
 }

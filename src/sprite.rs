@@ -91,6 +91,8 @@ pub enum SpriteId {
     MsLeft1Ter=61,
     MsUp1Ter=62,
     FruitStart=63,
+
+    CodeForNoSprite=255,
 }
 
 impl SpriteId {

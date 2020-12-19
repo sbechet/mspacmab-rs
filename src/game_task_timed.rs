@@ -1,6 +1,8 @@
 use std::collections::VecDeque;
+use embedded_graphics::prelude::*;
 
 use crate::game::Game;
+use crate::game::SpriteName;
 use crate::game_task::GameTask;
 use crate::game_counter::CurrentTime;
 use crate::game_task::TaskCoreE;
@@ -25,22 +27,21 @@ pub enum TaskTimedNameE {
 
 #[derive(Copy, Clone, Debug)]
 pub struct TaskTimedE {
-    unit:CurrentTime,
-    counter:u8,
-    task:TaskTimedNameE,
+    pub unit:CurrentTime,
+    pub counter:u8,
+    pub task:TaskTimedNameE,
 }
 
 pub trait GameTaskTimed {
-    fn timed_task_new() -> VecDeque<TaskTimedE>;
+    fn timed_task_new() -> VecDeque<TaskTimedE> {
+        VecDeque::with_capacity(MAX_TASKTIMED)
+    }
+
     fn timed_task_add(&mut self, unit: CurrentTime, counter: u8, t: TaskTimedNameE);
     fn timed_task_execute(&mut self);
 }
 
 impl GameTaskTimed for Game {
-    fn timed_task_new() -> VecDeque<TaskTimedE> {
-        VecDeque::with_capacity(MAX_TASKTIMED)
-    }
-
     // src:0030
     fn timed_task_add(&mut self, unit: CurrentTime, counter: u8, t: TaskTimedNameE) {
         let task = TaskTimedE {
@@ -80,7 +81,7 @@ impl GameTaskTimed for Game {
                         },
                         // 5 src:100b
                         TaskTimedNameE::ClearFruitPosition => {
-                            self.fruit_coord = (0, 0);
+                            self.sprite[SpriteName::Fruit as usize].p = Point::new(0,0);
                         },
                         // 6 src:0263
                         TaskTimedNameE::ClearReadyMessage => {

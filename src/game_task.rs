@@ -11,6 +11,7 @@ use crate::palette::ColorE;
 use crate::game::Game;
 use crate::game::Direction;
 use crate::game::MainStateE;
+use crate::game::SpriteName;
 use crate::game_attract::GameAttract;
 
 use crate::hardware::Bonus;
@@ -179,27 +180,27 @@ impl GameTask for Game {
                     //  4 src:253d
                     TaskCoreE::ResetSpritesToDefaultValues(start) => {
                         println!("TaskCoreE::ResetSpritesToDefaultValues");
-                        self.red_ghost.s = SpriteId::GhostRight1;
-                        self.pink_ghost.s = SpriteId::GhostRight1;
-                        self.blue_ghost.s = SpriteId::GhostRight1;
-                        self.orange_ghost.s = SpriteId::GhostRight1;
-                        self.man.s = SpriteId::ManStart;
-                        self.fruit.s = SpriteId::FruitStart;
+                        self.sprite[SpriteName::Red as usize].s = SpriteId::GhostRight1;
+                        self.sprite[SpriteName::Pink as usize].s = SpriteId::GhostRight1;
+                        self.sprite[SpriteName::Blue as usize].s = SpriteId::GhostRight1;
+                        self.sprite[SpriteName::Orange as usize].s = SpriteId::GhostRight1;
+                        self.sprite[SpriteName::Man as usize].s = SpriteId::ManStart;
+                        self.sprite[SpriteName::Fruit as usize].s = SpriteId::FruitStart;
 
-                        self.red_ghost.c = ColorE::Red;
-                        self.pink_ghost.c =  ColorE::Pink;
-                        self.blue_ghost.c = ColorE::Blue;
-                        self.orange_ghost.c = ColorE::Orange;
-                        self.man.c = ColorE::Yellow;
-                        self.fruit.c = ColorE::Black;
+                        self.sprite[SpriteName::Red as usize].c = ColorE::Red;
+                        self.sprite[SpriteName::Pink as usize].c = ColorE::Pink;
+                        self.sprite[SpriteName::Blue as usize].c = ColorE::Blue;
+                        self.sprite[SpriteName::Orange as usize].c = ColorE::Orange;
+                        self.sprite[SpriteName::Man as usize].c = ColorE::Yellow;
+                        self.sprite[SpriteName::Fruit as usize].c = ColorE::Black;
 
                         if start {
                             // src:2576
-                            self.red_ghost.p = Point::new(128,100);
-                            self.pink_ghost.p = Point::new(128,124);
-                            self.blue_ghost.p = Point::new(144,124);
-                            self.orange_ghost.p = Point::new(112,124);
-                            self.man.p = Point::new(128,196);
+                            self.sprite[SpriteName::Red as usize].p = Point::new(128,100);
+                            self.sprite[SpriteName::Pink as usize].p = Point::new(128,124);
+                            self.sprite[SpriteName::Blue as usize].p = Point::new(144,124);
+                            self.sprite[SpriteName::Orange as usize].p = Point::new(112,124);
+                            self.sprite[SpriteName::Man as usize].p = Point::new(128,196);
 
                             // Next Tile XY Position (middle of tile)
                             // Current Tile XY (these are updated after a move)
@@ -259,16 +260,16 @@ impl GameTask for Game {
                             self.man_orientation = Direction::Left;
                             self.wanted_man_orientation = Direction::Left;
 
-                            self.fruit_coord = (0,0);
+                            self.sprite[SpriteName::Fruit as usize].p = Point::new(0,0);
                         } else {
                             //  sets up sprites for character introduction screen
                             // src:260f
 
                             // sprites_coord_yx
-                            self.red_ghost.p = Point::new(0,148);
-                            self.pink_ghost.p = Point::new(0,148);
-                            self.blue_ghost.p = Point::new(0,148);
-                            self.orange_ghost.p = Point::new(0,148);
+                            self.sprite[SpriteName::Red as usize].p = Point::new(0,148);
+                            self.sprite[SpriteName::Pink as usize].p = Point::new(0,148);
+                            self.sprite[SpriteName::Blue as usize].p = Point::new(0,148);
+                            self.sprite[SpriteName::Orange as usize].p = Point::new(0,148);
 
                             // sprites_coord_middle_of_tile
                             self.red_ghost_next_tile = ( 30, 50);
@@ -398,7 +399,7 @@ impl GameTask for Game {
                             TextId::Ready => {
                                 // 963c
                                 // clear the intermission indicator
-                                self.intermission_mode = false;
+                                self.animation_enable = false;
                             },
                             _ => {},
                         }
