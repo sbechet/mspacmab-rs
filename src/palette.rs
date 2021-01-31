@@ -1,3 +1,5 @@
+use num_derive::{ FromPrimitive, ToPrimitive };
+
 const BLACK: u32        = 0x00_00_00_00;
 const GREY: u32         = 0x00_DE_DE_DE;
 
@@ -60,7 +62,7 @@ pub const PALETTE: [ [u32; 4]; 32] = [
     [BLACK,LIGHT_BROWN2,BLACK,GREY],    // 31
 ];
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, FromPrimitive, ToPrimitive)]
 pub enum ColorE {
     Black=0,
     Red=1,
