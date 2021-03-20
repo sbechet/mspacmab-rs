@@ -46,7 +46,7 @@ impl SpriteElement {
     pub fn new_man() -> SpriteElement {
         SpriteElement {
             p: Point::new(0, 0),
-            s: SpriteId::ManStart,
+            s: SpriteId::Stork0,
             c: ColorE::Yellow,
         }
     }

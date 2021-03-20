@@ -49,7 +49,7 @@ impl GameHwVideo {
             window: Window::new("mspacmab", &output_settings),
             screen_tile: [ [TileId::Space; HEIGHT]; WIDTH],
             screen_color: [ [ColorE::Black as u8; HEIGHT]; WIDTH],
-            screen_sprite: [ SpriteElement { p: Point {x: 0, y: 0}, s: SpriteId::ManStart, c: ColorE::Black}; MAX_SPRITES],
+            screen_sprite: [ SpriteElement { p: Point {x: 0, y: 0}, s: SpriteId::Stork0, c: ColorE::Black}; MAX_SPRITES],
             sprites_enabled: false,
             display: display,
             display_reset: false,
@@ -116,7 +116,7 @@ impl GameHwVideo {
     }
 
     pub fn clear_sprites(&mut self) {
-        self.screen_sprite = [ SpriteElement { p: Point {x: 0, y: 0}, s: SpriteId::ManStart, c: ColorE::Black}; MAX_SPRITES];
+        self.screen_sprite = [ SpriteElement { p: Point {x: 0, y: 0}, s: SpriteId::Stork0, c: ColorE::Black}; MAX_SPRITES];
         self.sprites_enabled = false;
         self.updated = true;
     }

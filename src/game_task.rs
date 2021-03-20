@@ -184,7 +184,7 @@ impl GameTask for Game {
                         self.sprite[SpriteName::Pink as usize].s = SpriteId::GhostRight1;
                         self.sprite[SpriteName::Blue as usize].s = SpriteId::GhostRight1;
                         self.sprite[SpriteName::Orange as usize].s = SpriteId::GhostRight1;
-                        self.sprite[SpriteName::Man as usize].s = SpriteId::ManStart;
+                        self.sprite[SpriteName::Man as usize].s = SpriteId::Stork0;
                         self.sprite[SpriteName::Fruit as usize].s = SpriteId::FruitStart;
 
                         self.sprite[SpriteName::Red as usize].c = ColorE::Red;
