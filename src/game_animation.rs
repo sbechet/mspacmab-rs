@@ -278,7 +278,6 @@ const INTERMISSION1_3: [Instruction; 28] = [
 ];
 
 // src:8395
-// TODO
 const INTERMISSION2_0: [Instruction; 41] = [
     Instruction::CmdF2SetRepeat(90), // f2 5a 
     Instruction::CmdF6Pause, // f6 
@@ -324,7 +323,6 @@ const INTERMISSION2_0: [Instruction; 41] = [
 ];
 
 // src:83f0
-// TODO
 const INTERMISSION2_1: [Instruction; 45] = [
     Instruction::CmdF2SetRepeat(0x63), // f2 63
     Instruction::CmdF6Pause, // f6 
@@ -374,7 +372,6 @@ const INTERMISSION2_1: [Instruction; 45] = [
 ];
 
 // src:8451
-// TODO
 const INTERMISSION3_0: [Instruction; 11] = [
     Instruction::CmdF2SetRepeat(0x5a), // f2 5a
     Instruction::CmdF6Pause, // f6 
@@ -390,7 +387,6 @@ const INTERMISSION3_0: [Instruction; 11] = [
 ];
 
 // src:846d
-// TODO
 const INTERMISSION3_1: [Instruction; 11] = [
     Instruction::CmdF2SetRepeat(0x6f), // f2 6f
     Instruction::CmdF6Pause, // f6 
@@ -406,7 +402,6 @@ const INTERMISSION3_1: [Instruction; 11] = [
 ];
 
 // src:8489
-// TODO
 const INTERMISSION3_4: [Instruction; 26] = [
     Instruction::CmdF3SetSprite(&SPRITE_CODES_FOR_ACT_SIGN3), // f3 &8689
     Instruction::CmdF2SetRepeat(0x01), // f2 01
@@ -437,7 +432,6 @@ const INTERMISSION3_4: [Instruction; 26] = [
 ];
 
 // src:84cf
-// TODO
 const INTERMISSION3_2: [Instruction; 19] = [
     Instruction::CmdF1SetPosition(0x00, 0x00), // f1 00 00
     Instruction::CmdF3SetSprite(&SPRITE_CODES_FOR_ACT_SIGN1), // f3 &8675
@@ -460,9 +454,7 @@ const INTERMISSION3_2: [Instruction; 19] = [
     Instruction::CmdFFStop, // ff
 ];
 
-
 // src:84fd
-// TODO
 const INTERMISSION3_3: [Instruction; 19] = [
     Instruction::CmdF1SetPosition(0x00, 0x00), // f1 00 00
     Instruction::CmdF3SetSprite(&SPRITE_CODES_FOR_ACT_SIGN2), // f3 &867f
@@ -486,7 +478,6 @@ const INTERMISSION3_3: [Instruction; 19] = [
 ];
 
 // src:852b
-// TODO
 const INTERMISSION2_2: [Instruction; 13] = [
     Instruction::CmdF1SetPosition(0x00, 0x00), // f1 00 00
     Instruction::CmdF3SetSprite(&SPRITE_CODES_FOR_ACT_SIGN1), // f3 &8675
@@ -504,7 +495,6 @@ const INTERMISSION2_2: [Instruction; 13] = [
 ];
 
 // src:854a
-// TODO
 const INTERMISSION2_3: [Instruction; 13] = [
     Instruction::CmdF1SetPosition(0x00, 0x00), // f1 00 00
     Instruction::CmdF3SetSprite(&SPRITE_CODES_FOR_ACT_SIGN2), // f3 &867f
@@ -532,6 +522,7 @@ const INTERMISSION1_4: [Instruction; 8] = [
     Instruction::CmdF1SetPosition(0, 0),    // ram:8578 f1 00 00        cmd_1_se
     Instruction::CmdFFStop, // ram:857b ff              cmd_F_en                                                    end code
 ];
+
 // src:857c
 const INTERMISSION1_5: [Instruction; 12] = [
     Instruction::CmdF3SetSprite(&SPRITE_CODES_FOR_ACT_SIGN4),  // ram:857c f3 8b 86        cmd_3_se                                                    #868B
@@ -547,33 +538,7 @@ const INTERMISSION1_5: [Instruction; 12] = [
     Instruction::CmdF1SetPosition(0, 0),    // ram:8590 f1 00 00        cmd_1_se
     Instruction::CmdFFStop, // ram:8593 ff              cmd_F_en                                                    end code
 ];
-/*
-he coordinate is the location on the screen where the upper left of
-the sprite is positioned on the screen.  The coordinates start on the
-bottom right of the screen.  The first coordinate that the 16x16 sprite
-is completely visible is at 31x16.  If it's lower than that, it starts
-appearing at the top of the screen.  Be aware however that the sprite
-does not appear on the bottom 16 or top 16 pixels of the display.
-These are in the horizontally arranged background tiles which will be
-explained later in the Video RAM Layout section.
 
-Horizontally, however, there is a section off the right and left sides of
-the screen where the sprites are invisible.   That is to say that you can
-scroll a sprite off the left or the right 
-
-
-                      vertical wrap is visible
-         (239,256) +----------------------------+ (31,256)
-                   |                            |
-       horizontal  ~                            ~  horizontal
-   wrap is hidden  ~                            ~  wrap is hidden
-                   |                            |
-          (239,16) +----------------------------+ (31,16)
-                      vertical wrap is visible
-
-xok = 224-x+8
-yok = y+8
-*/
 // src:8594
 const DATA_FOR_ATTRACT_MODE_1ST_GHOST: [Instruction; 10] = [
     Instruction::CmdF1SetPosition(0, 148),    // f1 00 94
@@ -817,13 +782,17 @@ pub trait GameAnimation {
     fn animation(&mut self, id:AnimationE);
 
     // src:3556
-    fn  animation_code_assert_coord(v: i8) -> i8 {
-        if v < 0 {
+    fn animation_code_assert_coord(c:i8) -> (i8, i8) {
+        let mut h = c>>4;    // for real coord
+        let mut l = c;  // intermediate
+        if c < 0 {
             /* arrive here when ghost is moving up the left side of the marquee */
-            (v as u8 | 0xf0) as i8
+            l = (l as u8 | 0xf0) as i8;
+            h += 1;
         } else {
-            v & 0x0f
+            l &= 0x0f;
         }
+        return (h,l);
     }
 
 }
@@ -853,27 +822,20 @@ impl GameAnimation for Game {
         // sprite index
         for index in 0..6 {
             let (arr, mut ind) = self.animation_current[index];
-            print!("animation: {:?}", arr[ind]);
+            match arr[ind] {
+                Instruction::CmdFFStop => {},
+                _ => print!("animation: {:?}", arr[ind]),
+            }
             match arr[ind] {
                 Instruction::CmdF0Update(a,b,c) => {
                     /* for value == #F0 */
-                    self.sprite[index].p += Point::new(a as i32, b as i32);
-
-                    // To understand:
-                    let (mut x, mut y) = (self.sprite[index].p.x, self.sprite[index].p.y);
-                    if x < 0 {
-                        x |= 0xf0;
-                    } else {
-                        x &= 0x0f;
-                    }
-                    if y < 0 {
-                        y |= 0xf0;
-                    } else {
-                        y &= 0x0f;
-                    }
-                    self.sprite[index].p.x = x;
-                    self.sprite[index].p.y = y;
-                    // /To understand
+                    let (ah, al) = Self::animation_code_assert_coord(a + self.animation_cmd_table_coord[index].0);
+                    let (bh, bl) = Self::animation_code_assert_coord(b + self.animation_cmd_table_coord[index].1);
+                    self.animation_cmd_table_coord[index].0 = al;
+                    self.animation_cmd_table_coord[index].1 = bl;
+                    self.sprite[index].p += Point::new(-ah as i32, bh as i32);
+                    print!("(ah, al)=({},{}), (bh, bl)=({},{})", ah, al, bh, bl);
+                    print!(", p:{:?}, t:{:?}", self.sprite[index].p, self.animation_cmd_table_coord[index]);
 
                     let mut sprite_index = self.animation_cmd_table_sprite_index[index] + 1;
                     let mut sprite = self.animation_cmd_table_sprite[index][sprite_index as usize];
@@ -887,7 +849,7 @@ impl GameAnimation for Game {
 
                     /* flip x and flip y in cocktail mode */
                     // TODO
-                    // if self.cocktail_mode & self.current_player_number != 0 {
+                    // if self.cocktail_mode && self.current_player_number != 0 {
                     //     sprite = sprite ^ 0xc0;
                     // }
 
@@ -905,8 +867,8 @@ impl GameAnimation for Game {
                 },
                 Instruction::CmdF1SetPosition(x,y) => {
                     /* for value == #F1 */
-                    // TODO: Find correct values
-                    // coord = sprite middle?
+                    // TODO: Check correct values
+                    // +8 because middle of sprite?
                     let x2:i32 = 224-(x as i32)+8;
                     let y2:i32 = (y as i32)+8;
                     print!(" -> ({},{})", x2, y2);
@@ -979,7 +941,11 @@ impl GameAnimation for Game {
                 },
             }
             self.animation_current[index].1 = ind;
-            println!();
+            match arr[ind] {
+                Instruction::CmdFFStop => {},
+                _ => println!(),
+            }
         }
     }
+
 }

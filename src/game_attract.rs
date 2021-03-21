@@ -5,6 +5,7 @@ use crate::text::TextId;
 use crate::tile::TileId;
 
 use crate::game::Game;
+use crate::game_animation::{ AnimationE, GameAnimation };
 // use crate::game_task::GameTask;
 use crate::game_playing::GamePlaying;
 use crate::game_task::{ TaskCoreE, ScreenPart };
@@ -84,8 +85,7 @@ impl GameAttract for Game {
             6 => {
                 // src:3483
                 // attract_mode_move_Blinky_around
-                //TODO:intermissions_and_attract_mode_animation_main_routine(0x24);
-                self.tt02_increase_subroutine_attract_state();
+                self.animation(AnimationE::Ghost1);
             },
             7 => {
                 // src:3ea2
@@ -97,8 +97,7 @@ impl GameAttract for Game {
             8 => {
                 // src:3488
                 // attract_mode_move_Pinky_across
-                //TODO: intermissions_and_attract_mode_animation_main_routine(0x30);
-                self.tt02_increase_subroutine_attract_state();
+                self.animation(AnimationE::Ghost2);
             },
             9 => {
                 // src:3eab
@@ -109,8 +108,7 @@ impl GameAttract for Game {
             10 => {
                 // src:348d
                 // attract_mode_move_Inky_across
-                //TODO: intermissions_and_attract_mode_animation_main_routine(0x3c);
-                self.tt02_increase_subroutine_attract_state();
+                self.animation(AnimationE::Ghost3);
             },
             11 => {
                 // src:3eb1
@@ -121,8 +119,7 @@ impl GameAttract for Game {
             12 => {
                 // src:3492
                 // attract_mode_move_Sue_across
-                // TODO: intermissions_and_attract_mode_animation_main_routine(0x48);
-                self.tt02_increase_subroutine_attract_state();
+                self.animation(AnimationE::Ghost4);
             },
             13 => {
                 // src:3ec3
@@ -139,8 +136,7 @@ impl GameAttract for Game {
             15 => {
                 // src:3497
                 // attract_mode_move_mspacman_across
-                // TODO: intermissions_and_attract_mode_animation_main_routine(0x54);
-                self.tt02_increase_subroutine_attract_state();
+                self.animation(AnimationE::Man);
             },
             16 => {
                 // src:3ec9
