@@ -16,7 +16,7 @@ use crate::palette::{PALETTE, ColorE};
 use crate::tile::{TileId, Tile};
 use crate::sprite::{SpriteId, Sprite};
 use crate::text::{TextId, Text};
-use crate::game_animation::{ GameAnimationT, Instruction, NO_DATA, NO_SPRITES };
+use crate::game_animation::{ Instruction, NO_DATA, NO_SPRITES };
 use crate::game_attract::GameAttract;
 use crate::game_playing::GamePlaying;
 use crate::game_task::{GameTask, TaskCoreE, ScreenPart};
@@ -203,15 +203,19 @@ pub struct Game {
     // src:4f02
     pub animation_current: [ (&'static [Instruction], usize) ; 6],
     // src:4f0f
-    pub animation_cmd_table_sprite_index: [ u8; 8],
+    pub animation_cmd_table_sprite_index: [ u8; 6],
     // src:4f17
-    pub animation_cmd_table_delay: [ u8; 8],
+    pub animation_cmd_table_repeat: [ u8; 6],
     // src:4f1f
     pub animation_cmd_table_stop:  [bool; 6],
     // src:4f2e
-    pub animation_cmd_table_f0_loop: [ (i8,i8); 6],
+    pub animation_cmd_table_coord: [ (i8,i8); 6],
     // src:4f3e
-    pub animation_cmd_table_sprite: [ &'static [SpriteId]; 8],
+    pub animation_cmd_table_sprite: [ &'static [SpriteId]; 6],
+    // src:4f4e
+    // pub animation_cmd_table_color: [ u8; 6],
+    // src:4f2e, src:4f4e
+    // pub animation_cmd_sprite: [SpriteElement; 6],
 
     // src:4e8c, src:4e92, src:4e97
     // src:4e9c, src:4eac, src:4ebc
@@ -344,11 +348,19 @@ impl Game {
             flashing_bulbs_counter: 0,
 
             animation_current: [ (&NO_DATA,0); 6],
-            animation_cmd_table_sprite_index: [ 0; 8],
-            animation_cmd_table_delay: [ 0; 8],
+            animation_cmd_table_sprite_index: [ 0; 6],
+            animation_cmd_table_repeat: [ 0; 6],
             animation_cmd_table_stop:  [false; 6],
-            animation_cmd_table_f0_loop: [ (0,0); 6],
-            animation_cmd_table_sprite: [ &NO_SPRITES; 8],
+            // animation_cmd_sprite: [
+            //     SpriteElement::new_red_ghost(),
+            //     SpriteElement::new_pink_ghost(),
+            //     SpriteElement::new_blue_ghost(),
+            //     SpriteElement::new_orange_ghost(),
+            //     SpriteElement::new_man(),
+            //     SpriteElement::new_fruit(),
+            // ],
+            animation_cmd_table_coord: [ (0,0); 6],
+            animation_cmd_table_sprite: [ &NO_SPRITES; 6],
 
         }
     }
