@@ -8,11 +8,15 @@ WIP!
 
 # Hardware
 
+Main CPU : Z80
+
 MASTER_CLOCK   18432000 Hz
 Z80_CLOCK      3072000 Hz
 PIXEL_CLOCK    6144000 Hz
 
 screen : 264x384 but mspacmab really use 224x288
+
+Sound Chip : Custom 3 channel 4-bit WSG
 
 HBLANK = 6144000 / 384 = 16000 Hz
 VBLANK = HBLANK / 264 = 60,60606060 Hz
