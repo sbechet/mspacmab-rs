@@ -129,15 +129,17 @@ impl GameTask for Game {
 
                         // src:24e1
                         for y in 2..=33 {
-                            // for x in 12..=27 {   // BUG? Only 1/2 screen... can't understand original binary code
                             for x in 0..=27 {
                                 self.hwvideo.put_screen_color(Point::new(x, y), color);
                             }
                         }
 
-                        // for x in 16..=27 {
-                        //     self.hwvideo.put_screen_color(Point::new(x, 0), ColorE::Black); // HACK: Original was = 0x40 (for "tunnel slowdown"?)
-                        // }
+                        // ColorFruit color for first two lines
+                        for y in 0..=1 {
+                            for x in 0..=27 {
+                                self.hwvideo.put_screen_color(Point::new(x, y), ColorE::ColorFruit);
+                            }
+                        }
 
                         if playing_state==1 {
                             // src:95c3
