@@ -1,5 +1,10 @@
 use core::marker::PhantomData;
 
+use num_derive::FromPrimitive;
+use num_derive::ToPrimitive;
+
+use num_traits::FromPrimitive;
+
 use embedded_graphics::{
     drawable::Pixel as EgPixel,
     geometry::Point,
@@ -11,8 +16,7 @@ use crate::palette::{ ColorE, PALETTE };
 use crate::pixel::Pixel;
 use crate::mspacmab_data::{SPRITE};
 
-
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, FromPrimitive, ToPrimitive)]
 pub enum SpriteId {
     Cherry=0,
     Strawberry=1,
@@ -335,6 +339,40 @@ impl SpriteId {
     pub fn get_sprite(&self, palette_id: ColorE) -> Sprite {
         Sprite::new(self, PALETTE[palette_id as usize])
     }
+
+    pub fn flip_x(&mut self) -> SpriteId {
+        let v = *self as u8;
+        return SpriteId::from_u8(v ^ 0b1000_0000).unwrap();
+    }
+
+    pub fn flip_y(&mut self) -> SpriteId {
+        let v = *self as u8;
+        return SpriteId::from_u8(v ^ 0b0100_0000).unwrap();
+    }
+
+    pub fn flip_xy(&mut self) -> SpriteId {
+        let v = *self as u8;
+        return SpriteId::from_u8(v ^ 0b1100_0000).unwrap();
+    }
+
+    pub fn set_flip_x(&mut self, flip: bool) -> SpriteId {
+        let v = *self as u8;
+        if flip {
+            return SpriteId::from_u8(v | 0b1000_0000).unwrap();
+        } else {
+            return SpriteId::from_u8(v | 0b0111_1111).unwrap();
+        }
+    }
+
+    pub fn set_flip_y(&mut self, flip: bool) -> SpriteId {
+        let v = *self as u8;
+        if flip {
+            return SpriteId::from_u8(v | 0b0100_000).unwrap();
+        } else {
+            return SpriteId::from_u8(v & 0b1011_1111).unwrap();
+        }
+    }
+
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
