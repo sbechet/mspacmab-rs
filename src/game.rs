@@ -153,7 +153,8 @@ pub struct Game {
     pub state_in_second_cutscene: u8,
     // src:4e08
     pub state_in_third_cutscene: u8,
-
+    // src:4e09
+    pub current_player_number: u8,
     // src:4e0a
     pub current_player: DataPlayer,
     // src:4e38
@@ -323,6 +324,8 @@ impl Game {
             state_in_first_cutscene: 0,
             state_in_second_cutscene: 0,
             state_in_third_cutscene: 0,
+
+            current_player_number: 0,
 
             current_player: DataPlayer {
                 level: 0,
@@ -585,10 +588,8 @@ impl Game {
                 }
             },
             // src:2400
-            // clean:4040->423f - history: (27, 2) -> (12, 33)
-            // calculated: (12, 2) -> (27, 33)
+            // TODO: clean:4040->423f ?
             ScreenPart::Maze => {
-                // for x in 12..=27 {   // BUG? Only 1/2 screen... not sure about original ROM code
                 for x in 0..=27 {
                     for y in 2..=33 {
                         self.hwvideo.put_screen_tile(Point::new(x as i32,y as i32), TileId::Space);

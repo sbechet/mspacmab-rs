@@ -85,56 +85,56 @@ const INTERMISSION3: [ (&'static [Instruction], usize) ; 6] = [
 /// attract mode 1st ghost
 // src:8214
 const GHOST1: [ (&'static [Instruction], usize) ; 6] = [
-    (&DATA_FOR_ATTRACT_MODE_1ST_GHOST, 0),  // ? red
-    (&NO_DATA, 0),                          // ? pink
-    (&NO_DATA, 0),                          // ? blue
-    (&NO_DATA, 0),                          // ? orange
-    (&NO_DATA, 0),                          // ? man
-    (&NO_DATA, 0)                           // ? fruit
+    (&DATA_FOR_ATTRACT_MODE_1ST_GHOST, 0),
+    (&NO_DATA, 0),
+    (&NO_DATA, 0),                        
+    (&NO_DATA, 0),                        
+    (&NO_DATA, 0),
+    (&NO_DATA, 0),
 ];
 
 /// attract mode 2nd ghost
 // src:8220
 const GHOST2: [ (&'static [Instruction], usize) ; 6] = [
-    (&NO_DATA, 0),                          // ? red
-    (&DATA_FOR_ATTRACT_MODE_2ND_GHOST, 0),  // ? pink
-    (&NO_DATA, 0),                          // ? blue
-    (&NO_DATA, 0),                          // ? orange
-    (&NO_DATA, 0),                          // ? man
-    (&NO_DATA, 0)                           // ? fruit
+    (&NO_DATA, 0),
+    (&DATA_FOR_ATTRACT_MODE_2ND_GHOST, 0),
+    (&NO_DATA, 0),                        
+    (&NO_DATA, 0),                        
+    (&NO_DATA, 0),
+    (&NO_DATA, 0),
 ];
 
 /// attract mode 3rd ghost
 // src:822c
 const GHOST3: [ (&'static [Instruction], usize) ; 6] = [
-    (&NO_DATA, 0),                          // ? red
-    (&NO_DATA, 0),                          // ? pink
-    (&DATA_FOR_ATTRACT_MODE_3RD_GHOST, 0),  // ? blue
-    (&NO_DATA, 0),                          // ? orange
-    (&NO_DATA, 0),                          // ? man
-    (&NO_DATA, 0)                           // ? fruit
+    (&NO_DATA, 0),
+    (&NO_DATA, 0),
+    (&DATA_FOR_ATTRACT_MODE_3RD_GHOST, 0),
+    (&NO_DATA, 0),
+    (&NO_DATA, 0),
+    (&NO_DATA, 0),
 ];
 
 /// attract mode 4th ghost
 // src:8238
 const GHOST4: [ (&'static [Instruction], usize) ; 6] = [
-    (&NO_DATA, 0),                          // ? red
-    (&NO_DATA, 0),                          // ? pink
-    (&NO_DATA, 0),                          // ? blue
-    (&DATA_FOR_ATTRACT_MODE_4TH_GHOST, 0),  // ? orange
-    (&NO_DATA, 0),                          // ? man
-    (&NO_DATA, 0)                           // ? fruit
+    (&NO_DATA, 0),
+    (&NO_DATA, 0),
+    (&NO_DATA, 0),                        
+    (&DATA_FOR_ATTRACT_MODE_4TH_GHOST, 0),
+    (&NO_DATA, 0),
+    (&NO_DATA, 0),
 ];
 
 /// attract mode mspacman
 // src:8244
 const MAN: [ (&'static [Instruction], usize) ; 6] = [
-    (&NO_DATA, 0),                          // ? red
-    (&NO_DATA, 0),                          // ? pink
-    (&NO_DATA, 0),                          // ? blue
-    (&NO_DATA, 0),                          // ? orange
-    (&DATA_FOR_ATTRACT_MODE_MAN, 0),        // ? man
-    (&NO_DATA, 0)                           // ? fruit
+    (&NO_DATA, 0),
+    (&NO_DATA, 0),
+    (&NO_DATA, 0),                        
+    (&NO_DATA, 0),                        
+    (&DATA_FOR_ATTRACT_MODE_MAN, 0),
+    (&NO_DATA, 0),
 ];
 
 // src:8250
@@ -176,105 +176,105 @@ const INTERMISSION1_0: [Instruction; 30] = [
 
 // src:82a3
 const INTERMISSION1_1: [Instruction; 42] = [
-    Instruction::CmdF1SetPosition(0, 0),        // ram:82a3 f1 00 00        cmd_1_se
-    Instruction::CmdF3SetSprite(&SPRITE_CODES_FOR_ACT_SIGN2),    // ram:82a6 f3 7f 86        cmd_3_se                                                    #867F
-    Instruction::CmdF2SetRepeat(1),    // ram:82a9 f2 01           cmd_2_se
-    Instruction::CmdF0Update(0, 0, ColorE::ColorMazeLevel3_4_5),        // ram:82ab f0 00 00 16     cmd_0_lo                                                    ACT sign
-    Instruction::CmdF1SetPosition(173,82),    // ram:82af f1 ad 52        cmd_1_se
-    Instruction::CmdF2SetRepeat(40),    // ram:82b2 f2 28           cmd_2_se
-    Instruction::CmdF6Pause,    // ram:82b4 f6              cmd_6_pa
-    Instruction::CmdF2SetRepeat(22),    // ram:82b5 f2 16           cmd_2_se
-    Instruction::CmdF0Update(0, 0, ColorE::ColorMazeLevel3_4_5),    // ram:82b7 f0 00 00 16     cmd_0_lo                                                    ACT sign
-    Instruction::CmdF2SetRepeat(22),    // ram:82bb f2 16           cmd_2_se
-    Instruction::CmdF6Pause,    // ram:82bd f6              cmd_6_pa
-    Instruction::CmdF1SetPosition(255,84),// ram:82be f1 ff 54        cmd_1_se
-    Instruction::CmdF3SetSprite(&GHOST_EYES_LOOKING_RIGHT),    // ram:82c1 f3 5c 86        cmd_3_se                                                    #865C
-    Instruction::CmdF2SetRepeat(47), // ram:82c4 f2 2f           cmd_2_se
-    Instruction::CmdF6Pause,  // ram:82c6 f6              cmd_6_pa
-    Instruction::CmdF2SetRepeat(112),   // ram:82c7 f2 70           cmd_2_se
-    Instruction::CmdF0Update(-17, 0, ColorE::Blue), // ram:82c9 f0 ef 00 05     cmd_0_lo                                                    cyan ghost
-    Instruction::CmdF2SetRepeat(116),   // ram:82cd f2 74           cmd_2_se
-    Instruction::CmdF0Update(-20, 0, ColorE::Blue), // ram:82cf f0 ec 00 05     cmd_0_lo                                                    cyan ghost
-    Instruction::CmdF1SetPosition(0,127), // ram:82d3 f1 00 7f        cmd_1_se
-    Instruction::CmdF3SetSprite(&GHOST_EYES_LOOKING_LEFT), // ram:82d6 f3 63 86        cmd_3_se                                                    #8663
-    Instruction::CmdF2SetRepeat(28),    // ram:82d9 f2 1c           cmd_2_se
-    Instruction::CmdF6Pause,  // ram:82db f6              cmd_6_pa
-    Instruction::CmdF2SetRepeat(88),    // ram:82dc f2 58           cmd_2_se
-    Instruction::CmdF0Update(22, 0, ColorE::Blue),  // ram:82de f0 16 00 05     cmd_0_lo
-    Instruction::CmdF5Play(16), // ram:82e2 f5 10           cmd_5_pl                                                    sound for ghost bump
-    Instruction::CmdF2SetRepeat(6), // ram:82e4 f2 06           cmd_2_se
-    Instruction::CmdF0Update(-8, -8, ColorE::Blue),   // ram:82e6 f0 f8 f8 05     cmd_0_lo
-    Instruction::CmdF2SetRepeat(6), // ram:82ea f2 06           cmd_2_se
-    Instruction::CmdF0Update(-8, 8, ColorE::Blue), // ram:82ec f0 f8 08 05     cmd_0_lo
-    Instruction::CmdF2SetRepeat(6), // ram:82f0 f2 06           cmd_2_se
-    Instruction::CmdF0Update(-8, -8, ColorE::Blue),   // ram:82f2 f0 f8 f8 05     cmd_0_lo
-    Instruction::CmdF2SetRepeat(6), // ram:82f6 f2 06           cmd_2_se
-    Instruction::CmdF0Update(-8, 8, ColorE::Blue),   // ram:82f8 f0 f8 08 05     cmd_0_lo
-    Instruction::CmdF1SetPosition(0, 0),    // ram:82fc f1 00 00        cmd_1_se
-    Instruction::CmdF3SetSprite(&SPRITE_CODES_FOR_HEART), // ram:82ff f3 73 86        cmd_3_se                                                    #8673
-    Instruction::CmdF2SetRepeat(1), // ram:8302 f2 01           cmd_2_se
-    Instruction::CmdF0Update(0, 0, ColorE::Pink),   // ram:8304 f0 00 00 03     cmd_0_lo
-    Instruction::CmdF1SetPosition(127, 58), // ram:8308 f1 7f 3a        cmd_1_se
-    Instruction::CmdF2SetRepeat(64),    // ram:830b f2 40           cmd_2_se
-    Instruction::CmdF0Update(0, 0, ColorE::Pink),   // ram:830d f0 00 00 03     cmd_0_lo
-    Instruction::CmdFFStop, // ram:8311 ff              cmd_F_en                                                    end code
+    Instruction::CmdF1SetPosition(0, 0),        // ram:82a3 f1 00 00
+    Instruction::CmdF3SetSprite(&SPRITE_CODES_FOR_ACT_SIGN2),    // ram:82a6 f3 7f 86
+    Instruction::CmdF2SetRepeat(1),    // ram:82a9 f2 01
+    Instruction::CmdF0Update(0, 0, ColorE::ColorMazeLevel3_4_5),        // ram:82ab f0 00 00 16
+    Instruction::CmdF1SetPosition(173,82),    // ram:82af f1 ad 52
+    Instruction::CmdF2SetRepeat(40),    // ram:82b2 f2 28
+    Instruction::CmdF6Pause,    // ram:82b4 f6
+    Instruction::CmdF2SetRepeat(22),    // ram:82b5 f2 16
+    Instruction::CmdF0Update(0, 0, ColorE::ColorMazeLevel3_4_5),    // ram:82b7 f0 00 00 16
+    Instruction::CmdF2SetRepeat(22),    // ram:82bb f2 16
+    Instruction::CmdF6Pause,    // ram:82bd f6
+    Instruction::CmdF1SetPosition(255,84),// ram:82be f1 ff 54
+    Instruction::CmdF3SetSprite(&GHOST_EYES_LOOKING_RIGHT),    // ram:82c1 f3 5c 86
+    Instruction::CmdF2SetRepeat(47), // ram:82c4 f2 2f
+    Instruction::CmdF6Pause,  // ram:82c6 f6
+    Instruction::CmdF2SetRepeat(112),   // ram:82c7 f2 70
+    Instruction::CmdF0Update(-17, 0, ColorE::Blue), // ram:82c9 f0 ef 00 05
+    Instruction::CmdF2SetRepeat(116),   // ram:82cd f2 74
+    Instruction::CmdF0Update(-20, 0, ColorE::Blue), // ram:82cf f0 ec 00 05
+    Instruction::CmdF1SetPosition(0,127), // ram:82d3 f1 00 7f
+    Instruction::CmdF3SetSprite(&GHOST_EYES_LOOKING_LEFT), // ram:82d6 f3 63 86
+    Instruction::CmdF2SetRepeat(28),    // ram:82d9 f2 1c
+    Instruction::CmdF6Pause,  // ram:82db f6
+    Instruction::CmdF2SetRepeat(88),    // ram:82dc f2 58
+    Instruction::CmdF0Update(22, 0, ColorE::Blue),  // ram:82de f0 16 00 05
+    Instruction::CmdF5Play(16), // ram:82e2 f5 10
+    Instruction::CmdF2SetRepeat(6), // ram:82e4 f2 06
+    Instruction::CmdF0Update(-8, -8, ColorE::Blue),   // ram:82e6 f0 f8 f8 05
+    Instruction::CmdF2SetRepeat(6), // ram:82ea f2 06
+    Instruction::CmdF0Update(-8, 8, ColorE::Blue), // ram:82ec f0 f8 08 05
+    Instruction::CmdF2SetRepeat(6), // ram:82f0 f2 06
+    Instruction::CmdF0Update(-8, -8, ColorE::Blue),   // ram:82f2 f0 f8 f8 05
+    Instruction::CmdF2SetRepeat(6), // ram:82f6 f2 06
+    Instruction::CmdF0Update(-8, 8, ColorE::Blue),   // ram:82f8 f0 f8 08 05
+    Instruction::CmdF1SetPosition(0, 0),    // ram:82fc f1 00 00
+    Instruction::CmdF3SetSprite(&SPRITE_CODES_FOR_HEART), // ram:82ff f3 73 86
+    Instruction::CmdF2SetRepeat(1), // ram:8302 f2 01
+    Instruction::CmdF0Update(0, 0, ColorE::Pink),   // ram:8304 f0 00 00 03
+    Instruction::CmdF1SetPosition(127, 58), // ram:8308 f1 7f 3a
+    Instruction::CmdF2SetRepeat(64),    // ram:830b f2 40
+    Instruction::CmdF0Update(0, 0, ColorE::Pink),   // ram:830d f0 00 00 03
+    Instruction::CmdFFStop, // ram:8311 ff
 ];
 
 // src:8312
 const INTERMISSION1_2: [Instruction; 21] = [
-    Instruction::CmdF2SetRepeat(90),    // ram:8312 f2 5a           cmd_2_se
-    Instruction::CmdF6Pause,    // ram:8314 f6              cmd_6_pa
-    Instruction::CmdF1SetPosition(0, 164),  // ram:8315 f1 00 a4        cmd_1_se
-    Instruction::CmdF3SetSprite(&MAN_LEFT), // ram:8318 f3 41 86        cmd_3_se                                                    #8641    left anna
-    Instruction::CmdF2SetRepeat(127),   // ram:831b f2 7f           cmd_2_se
-    Instruction::CmdF0Update(16, 0, ColorE::Yellow),    // ram:831d f0 10 00 09     cmd_0_lo
-    Instruction::CmdF2SetRepeat(127),   // ram:8321 f2 7f           cmd_2_se
-    Instruction::CmdF0Update(16, 0, ColorE::Yellow),    // ram:8323 f0 10 00 09     cmd_0_lo
-    Instruction::CmdF1SetPosition(255, 127), // ram:8327 f1 ff 7f        cmd_1_se
-    Instruction::CmdF3SetSprite(&RIGHT_PAC), // ram:832a f3 38 86        cmd_3_se                                                    right anna
-    Instruction::CmdF2SetRepeat(118),   // ram:832d f2 76           cmd_2_se
-    Instruction::CmdF0Update(-16, 0, ColorE::Yellow),   // ram:832f f0 f0 00 09     cmd_0_lo
-    Instruction::CmdF2SetRepeat(4), // ram:8333 f2 04           cmd_2_se
-    Instruction::CmdF0Update(-16, -16, ColorE::Yellow), // ram:8335 f0 f0 f0 09     cmd_0_lo
-    Instruction::CmdF3SetSprite(&MSP_MOVING_UP_AT_THE_END), // ram:8339 f3 4a 86        cmd_3_se                                                    up anna (?)
-    Instruction::CmdF2SetRepeat(48),    // ram:833c f2 30           cmd_2_se
-    Instruction::CmdF0Update(0,-16, ColorE::Yellow),    // ram:833e f0 00 f0 09     cmd_0_lo
-    Instruction::CmdF3SetSprite(&RIGHT_PAC), // ram:8342 f3 38 86        cmd_3_se                                                    stopped anna
-    Instruction::CmdF2SetRepeat(16),    // ram:8345 f2 10           cmd_2_se
-    Instruction::CmdF0Update(0, 0, ColorE::Yellow),   // ram:8347 f0 00 00 09     cmd_0_lo
-    Instruction::CmdFFStop, // ram:834b ff              cmd_F_en                                                    end code
+    Instruction::CmdF2SetRepeat(90),    // ram:8312 f2 5a
+    Instruction::CmdF6Pause,    // ram:8314 f6
+    Instruction::CmdF1SetPosition(0, 164),  // ram:8315 f1 00 a4
+    Instruction::CmdF3SetSprite(&MAN_LEFT), // ram:8318 f3 41 86
+    Instruction::CmdF2SetRepeat(127),   // ram:831b f2 7f
+    Instruction::CmdF0Update(16, 0, ColorE::Yellow),    // ram:831d f0 10 00 09
+    Instruction::CmdF2SetRepeat(127),   // ram:8321 f2 7f
+    Instruction::CmdF0Update(16, 0, ColorE::Yellow),    // ram:8323 f0 10 00 09
+    Instruction::CmdF1SetPosition(255, 127), // ram:8327 f1 ff 7f
+    Instruction::CmdF3SetSprite(&RIGHT_PAC), // ram:832a f3 38 86
+    Instruction::CmdF2SetRepeat(118),   // ram:832d f2 76
+    Instruction::CmdF0Update(-16, 0, ColorE::Yellow),   // ram:832f f0 f0 00 09
+    Instruction::CmdF2SetRepeat(4), // ram:8333 f2 04
+    Instruction::CmdF0Update(-16, -16, ColorE::Yellow), // ram:8335 f0 f0 f0 09
+    Instruction::CmdF3SetSprite(&MSP_MOVING_UP_AT_THE_END), // ram:8339 f3 4a 86
+    Instruction::CmdF2SetRepeat(48),    // ram:833c f2 30
+    Instruction::CmdF0Update(0,-16, ColorE::Yellow),    // ram:833e f0 00 f0 09
+    Instruction::CmdF3SetSprite(&RIGHT_PAC), // ram:8342 f3 38 86
+    Instruction::CmdF2SetRepeat(16),    // ram:8345 f2 10
+    Instruction::CmdF0Update(0, 0, ColorE::Yellow),   // ram:8347 f0 00 00 09
+    Instruction::CmdFFStop, // ram:834b ff
 ];
 
 // src:834c
 const INTERMISSION1_3: [Instruction; 28] = [
-    Instruction::CmdF2SetRepeat(95),    // ram:834c f2 5f           cmd_2_se
-    Instruction::CmdF6Pause,    // ram:834e f6              cmd_6_pa
-    Instruction::CmdF1SetPosition(1, 164),  // ram:834f f1 01 a4        cmd_1_se
-    Instruction::CmdF3SetSprite(&GHOST_EYES_LOOKING_LEFT), // ram:8352 f3 63 86        cmd_3_se                                                    #8663
-    Instruction::CmdF2SetRepeat(47),    // ram:8355 f2 2f           cmd_2_se
-    Instruction::CmdF6Pause,    // ram:8357 f6              cmd_6_pa
-    Instruction::CmdF2SetRepeat(112),   // ram:8358 f2 70           cmd_2_se
-    Instruction::CmdF0Update(17, 0, ColorE::Pink),  // ram:835a f0 11 00 03     cmd_0_lo
-    Instruction::CmdF2SetRepeat(116),   // ram:835e f2 74           cmd_2_se
-    Instruction::CmdF0Update(20, 0, ColorE::Pink),  // ram:8360 f0 14 00 03     cmd_0_lo
-    Instruction::CmdF1SetPosition(255, 127), // ram:8364 f1 ff 7f        cmd_1_se
-    Instruction::CmdF3SetSprite(&GHOST_EYES_LOOKING_RIGHT), // ram:8367 f3 5c 86        cmd_3_se                                                    #865C
-    Instruction::CmdF2SetRepeat(28),    // ram:836a f2 1c           cmd_2_se
-    Instruction::CmdF6Pause,    // ram:836c f6              cmd_6_pa
-    Instruction::CmdF2SetRepeat(88),    // ram:836d f2 58           cmd_2_se
-    Instruction::CmdF0Update(-22, 0, ColorE::Pink), // ram:836f f0 ea 00 03     cmd_0_lo
-    Instruction::CmdF2SetRepeat(6), // ram:8373 f2 06           cmd_2_se
-    Instruction::CmdF0Update(8, -8, ColorE::Pink),    // ram:8375 f0 08 f8 03     cmd_0_lo
-    Instruction::CmdF2SetRepeat(6), // ram:8379 f2 06           cmd_2_se
-    Instruction::CmdF0Update(8, 8, ColorE::Pink), // ram:837b f0 08 08 03     cmd_0_lo
-    Instruction::CmdF2SetRepeat(6), // ram:837f f2 06           cmd_2_se
-    Instruction::CmdF0Update(8, -8, ColorE::Pink),    // ram:8381 f0 08 f8 03     cmd_0_lo
-    Instruction::CmdF2SetRepeat(6), // ram:8385 f2 06           cmd_2_se
-    Instruction::CmdF0Update(8, 8, ColorE::Pink),   // ram:8387 f0 08 08 03     cmd_0_lo
-    Instruction::CmdF3SetSprite(&EMPTY_SPRITE), // ram:838b f3 71 86        cmd_3_se                                                    #8671
-    Instruction::CmdF2SetRepeat(16),    // ram:838e f2 10           cmd_2_se
-    Instruction::CmdF0Update(0, 0, ColorE::ColorMazeLevel3_4_5),    // ram:8390 f0 00 00 16     cmd_0_lo
-    Instruction::CmdFFStop, // ram:8394 ff              cmd_F_en                                                    end code
+    Instruction::CmdF2SetRepeat(95),    // ram:834c f2 5f
+    Instruction::CmdF6Pause,    // ram:834e f6
+    Instruction::CmdF1SetPosition(1, 164),  // ram:834f f1 01 a4
+    Instruction::CmdF3SetSprite(&GHOST_EYES_LOOKING_LEFT), // ram:8352 f3 63 86
+    Instruction::CmdF2SetRepeat(47),    // ram:8355 f2 2f
+    Instruction::CmdF6Pause,    // ram:8357 f6
+    Instruction::CmdF2SetRepeat(112),   // ram:8358 f2 70
+    Instruction::CmdF0Update(17, 0, ColorE::Pink),  // ram:835a f0 11 00 03
+    Instruction::CmdF2SetRepeat(116),   // ram:835e f2 74
+    Instruction::CmdF0Update(20, 0, ColorE::Pink),  // ram:8360 f0 14 00 03
+    Instruction::CmdF1SetPosition(255, 127), // ram:8364 f1 ff 7f
+    Instruction::CmdF3SetSprite(&GHOST_EYES_LOOKING_RIGHT), // ram:8367 f3 5c 86
+    Instruction::CmdF2SetRepeat(28),    // ram:836a f2 1c
+    Instruction::CmdF6Pause,    // ram:836c f6
+    Instruction::CmdF2SetRepeat(88),    // ram:836d f2 58
+    Instruction::CmdF0Update(-22, 0, ColorE::Pink), // ram:836f f0 ea 00 03
+    Instruction::CmdF2SetRepeat(6), // ram:8373 f2 06
+    Instruction::CmdF0Update(8, -8, ColorE::Pink),    // ram:8375 f0 08 f8 03
+    Instruction::CmdF2SetRepeat(6), // ram:8379 f2 06
+    Instruction::CmdF0Update(8, 8, ColorE::Pink), // ram:837b f0 08 08 03
+    Instruction::CmdF2SetRepeat(6), // ram:837f f2 06
+    Instruction::CmdF0Update(8, -8, ColorE::Pink),    // ram:8381 f0 08 f8 03
+    Instruction::CmdF2SetRepeat(6), // ram:8385 f2 06
+    Instruction::CmdF0Update(8, 8, ColorE::Pink),   // ram:8387 f0 08 08 03
+    Instruction::CmdF3SetSprite(&EMPTY_SPRITE), // ram:838b f3 71 86
+    Instruction::CmdF2SetRepeat(16),    // ram:838e f2 10
+    Instruction::CmdF0Update(0, 0, ColorE::ColorMazeLevel3_4_5),    // ram:8390 f0 00 00 16
+    Instruction::CmdFFStop, // ram:8394 ff
 ];
 
 // src:8395
@@ -513,30 +513,30 @@ const INTERMISSION2_3: [Instruction; 13] = [
 
 // src:8569
 const INTERMISSION1_4: [Instruction; 8] = [
-    Instruction::CmdF3SetSprite(&SPRITE_CODES_FOR_ACT_SIGN3), // ram:8569 f3 89 86        cmd_3_se
-    Instruction::CmdF2SetRepeat(1), // ram:856c f2 01           cmd_2_se
-    Instruction::CmdF0Update(0, 0, ColorE::ColorMazeLevel3_4_5),    // ram:856e f0 00 00 16     cmd_0_lo
-    Instruction::CmdF1SetPosition(189, 98), // ram:8572 f1 bd 62        cmd_1_se
-    Instruction::CmdF2SetRepeat(90),    // ram:8575 f2 5a           cmd_2_se
-    Instruction::CmdF6Pause,    // ram:8577 f6              cmd_6_pa
-    Instruction::CmdF1SetPosition(0, 0),    // ram:8578 f1 00 00        cmd_1_se
-    Instruction::CmdFFStop, // ram:857b ff              cmd_F_en                                                    end code
+    Instruction::CmdF3SetSprite(&SPRITE_CODES_FOR_ACT_SIGN3), // ram:8569 f3 89 86
+    Instruction::CmdF2SetRepeat(1), // ram:856c f2 01
+    Instruction::CmdF0Update(0, 0, ColorE::ColorMazeLevel3_4_5),    // ram:856e f0 00 00 16
+    Instruction::CmdF1SetPosition(189, 98), // ram:8572 f1 bd 62
+    Instruction::CmdF2SetRepeat(90),    // ram:8575 f2 5a
+    Instruction::CmdF6Pause,    // ram:8577 f6
+    Instruction::CmdF1SetPosition(0, 0),    // ram:8578 f1 00 00
+    Instruction::CmdFFStop, // ram:857b ff
 ];
 
 // src:857c
 const INTERMISSION1_5: [Instruction; 12] = [
-    Instruction::CmdF3SetSprite(&SPRITE_CODES_FOR_ACT_SIGN4),  // ram:857c f3 8b 86        cmd_3_se                                                    #868B
-    Instruction::CmdF2SetRepeat(1), // ram:857f f2 01           cmd_2_se
-    Instruction::CmdF0Update(0, 0, ColorE::ColorMazeLevel3_4_5),    // ram:8581 f0 00 00 16     cmd_0_lo
-    Instruction::CmdF1SetPosition(173, 98), // ram:8585 f1 ad 62        cmd_1_se
-    Instruction::CmdF2SetRepeat(57),    // ram:8588 f2 39           cmd_2_se
-    Instruction::CmdF6Pause,    // ram:858a f6              cmd_6_pa                                                    pause
-    Instruction::CmdF7ShowAct,  // ram:858b f7              cmd_7_sh                                                    display text
-    Instruction::CmdF2SetRepeat(30),    // ram:858c f2 1e           cmd_2_se
-    Instruction::CmdF6Pause,    // ram:858e f6              cmd_6_pa
-    Instruction::CmdF8ClearAct, // ram:858f f8              cmd_8_cl                                                    clear act number
-    Instruction::CmdF1SetPosition(0, 0),    // ram:8590 f1 00 00        cmd_1_se
-    Instruction::CmdFFStop, // ram:8593 ff              cmd_F_en                                                    end code
+    Instruction::CmdF3SetSprite(&SPRITE_CODES_FOR_ACT_SIGN4), // ram:857c f3 8b 86
+    Instruction::CmdF2SetRepeat(1), // ram:857f f2 01
+    Instruction::CmdF0Update(0, 0, ColorE::ColorMazeLevel3_4_5), // ram:8581 f0 00 00 16
+    Instruction::CmdF1SetPosition(173, 98), // ram:8585 f1 ad 62
+    Instruction::CmdF2SetRepeat(57), // ram:8588 f2 39
+    Instruction::CmdF6Pause, // ram:858a f6
+    Instruction::CmdF7ShowAct, // ram:858b f7
+    Instruction::CmdF2SetRepeat(30), // ram:858c f2 1e
+    Instruction::CmdF6Pause, // ram:858e f6
+    Instruction::CmdF8ClearAct, // ram:858f f8
+    Instruction::CmdF1SetPosition(0, 0), // ram:8590 f1 00 00
+    Instruction::CmdFFStop, // ram:8593 ff
 ];
 
 // src:8594
@@ -834,8 +834,8 @@ impl GameAnimation for Game {
                     self.animation_cmd_table_coord[index].0 = al;
                     self.animation_cmd_table_coord[index].1 = bl;
                     self.sprite[index].p += Point::new(-ah as i32, bh as i32);
-                    print!("(ah, al)=({},{}), (bh, bl)=({},{})", ah, al, bh, bl);
-                    print!(", p:{:?}, t:{:?}", self.sprite[index].p, self.animation_cmd_table_coord[index]);
+                    // print!("(ah, al)=({},{}), (bh, bl)=({},{})", ah, al, bh, bl);
+                    // print!(", p:{:?}, t:{:?}", self.sprite[index].p, self.animation_cmd_table_coord[index]);
 
                     let mut sprite_index = self.animation_cmd_table_sprite_index[index] + 1;
                     let mut sprite = self.animation_cmd_table_sprite[index][sprite_index as usize];
@@ -847,15 +847,13 @@ impl GameAnimation for Game {
 
                     self.sprite[index].c = c;
 
-                    /* flip x and flip y in cocktail mode */
-                    // TODO
-                    // if self.cocktail_mode && self.current_player_number != 0 {
-                    //     sprite = sprite ^ 0xc0;
-                    // }
+                    /* flip x and y in cocktail mode */
+                    if self.cocktail_mode && self.current_player_number != 0 {
+                        self.sprite[index].s.flip_xy();
+                    }
 
                     /* select sprite */
                     self.sprite[index].s = sprite;
-                    // print!(", sprite: {:?} ({:?})", self.sprite[index].s, self.sprite[index].p);
 
                     /* repeat */
                     self.animation_cmd_table_repeat[index] -= 1;
