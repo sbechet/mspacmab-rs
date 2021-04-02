@@ -25,6 +25,7 @@ use crate::mspacmab_data_maze::{ MAZE, PELLET, POWER_PILL};
 use crate::mspacmab_data_fruit::{ FruitId, FRUIT};
 
 
+#[derive(PartialEq)]
 pub enum MainStateE {
     Init=0,
     Attract=1,
@@ -127,13 +128,16 @@ pub struct Game {
     // src:4da5
     pub ghost_eat_ability: bool,
 
+    // src:4dce
+    pub counter_blink_for_lights_coin_and_players: u8,
+
     // src:4dd1 FRUITP  fruit position
     pub killed_ghost_animation_state: i8,
     // src:4dd4
     pub fruit_points: i8,
     // src:4dd5 emtpy
     // src:4dd6
-    led_state: bool,
+    can_led_blink: bool,
     // src:[4dd7..=4dff] empty bytes
     // src:4e00
     pub mode: MainStateE,
@@ -234,7 +238,7 @@ impl Game {
             hwinput: HardwareInput::new(),
             hwoutput: HardwareOutput::new(),
             counter: Counter60Hz::new(),
-            led_state: false,
+            can_led_blink: false,
             mode: MainStateE::Init,                        // src:4e00
             subroutine_init_state: 0,                      // src:4e01
 
@@ -317,6 +321,8 @@ impl Game {
             number_of_ghost_killed_but_no_collision_for_yet: 0,
             ghost_eat_ability: false,
 
+            counter_blink_for_lights_coin_and_players: 0,
+
             killed_ghost_animation_state: 0,
 
             fruit_points: 0,
@@ -378,6 +384,54 @@ impl Game {
 
     /* MEMORY_MAP: program_rom1 **********************************************/
 
+    /* src:02fd */
+    fn blink_coin_lights(&mut self) {
+
+        self.counter_blink_for_lights_coin_and_players+=1;
+
+        // ======================== Blink coin lights
+        if self.counter_blink_for_lights_coin_and_players & 0xf == 0 {
+            // lamp off when credits inserted, else use counter bit 4
+            let onoff = !self.can_led_blink |
+                        ((self.counter_blink_for_lights_coin_and_players >> 4) & 1 == 1);
+
+            let (lamp1, lamp2) = match self.number_of_credits {
+                0 => (false, false),
+                1 => (onoff, false),
+                _ => (onoff, onoff)
+            };
+
+            self.hwoutput.lamp1 = lamp1;
+            self.hwoutput.lamp2 = lamp2;
+        }
+
+        // ============================= 1UP & 2UP
+        if self.mode != MainStateE::Playing && self.subroutine_coin_inserted_state < 2 {
+            Text::print(&mut self.hwvideo,  (3, 0), "1UP");
+            Text::print(&mut self.hwvideo, (22, 0), "2UP");
+        } else {
+            // display and blink 1UP/2UP depending on player up
+            if self.current_player_number == 0 {
+                if self.counter_blink_for_lights_coin_and_players & 0x10 == 0 {
+                    Text::print(&mut self.hwvideo, (3, 0), "1UP");
+                } else {
+                    Text::print(&mut self.hwvideo, (3, 0), "   ");
+                }
+            } else {
+                if self.counter_blink_for_lights_coin_and_players & 0x10 == 0 {
+                    Text::print(&mut self.hwvideo, (22, 0), "2UP");
+                } else {
+                    Text::print(&mut self.hwvideo, (22, 0), "   ");
+                }
+            }
+
+            if self.number_of_players == 0 {
+                Text::print(&mut self.hwvideo, (22, 0), "   ");
+            }
+        }
+
+    }
+
     /* src:03c8 */
     fn change_mode(&mut self) {
         match self.mode {
@@ -423,7 +477,7 @@ impl Game {
                         self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::AdditionalAt000Pts, false));
                         self.tasks.push_back(TaskCoreE::ClearFruitAndPacmanPosition);
                         self.subroutine_coin_inserted_state += 1;
-                        self.led_state = true;
+                        self.can_led_blink = true;
                         if self.bonus != 255 {
                             self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::TileMsPacMan, false));
                             self.tasks.push_back(TaskCoreE::DrawExtraLifePoints);
@@ -463,7 +517,7 @@ impl Game {
                         }
                 
                         self.subroutine_coin_inserted_state += 1;
-                        self.led_state = false;
+                        self.can_led_blink = false;
                         self.wave[0].num = 1;
                         self.wave[1].num = 1;
                     },
@@ -557,7 +611,7 @@ impl Game {
                 // cocktail_mode_update_sprites();
                 // rack_input__add_credits();
                 // debounce_coin_input__add_credits();
-                // blink_coin_lights();
+                self.blink_coin_lights();
             }
         }
 
@@ -650,20 +704,7 @@ impl Game {
     pub fn draw_score_to_screen(&mut self, score:u32, p:(u8, u8) ) {
         // Printed text format must be '00' not '0' for 0
         let text = format!("{:5}{:1}", score / 10, score % 10);
-        let textb = text.as_bytes();
-        let mut x = p.0 as i32;
-        let y = p.1 as i32;
-
-        for c in textb {
-            let p = Point::new(x,y);
-            x += 1;
-            let tileid = match c {
-                b' ' => TileId::Space,
-                _ => TileId::from_u8(*c).unwrap(),
-            };
-            self.hwvideo.put_screen_tile(p, tileid);
-        }
-
+        Text::print(&mut self.hwvideo, p, &text);
     }
 
     // src:2b6a
