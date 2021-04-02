@@ -217,4 +217,21 @@ impl Text<'_> {
         }
         // println!();
     }
+
+    // src:369, src:376, src:383, src:390
+    pub fn print(hwvideo: &mut GameHwVideo, p:(u8, u8), text:&str) {
+        let mut x = p.0 as i32;
+        let y = p.1 as i32;
+
+        for c in text.as_bytes() {
+            let p = Point::new(x,y);
+            x += 1;
+            // Hack for space
+            let tileid = match c {
+                b' ' => TileId::Space,
+                _ => TileId::from_u8(*c).unwrap(),
+            };
+            hwvideo.put_screen_tile(p, tileid);
+        }
+    }
 }
