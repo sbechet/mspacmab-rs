@@ -164,7 +164,18 @@ pub struct Game {
     // src:4e38
     pub backup_player: DataPlayer,
 
-    // src:4e6b
+    // COINS, CREDITS                                                                                                                                                                                                                                                           *
+    // src:4e66
+    pub input_state_service0: u8,
+    // src:4e67
+    pub input_state_coin_insert: u8,
+    // src:4e68
+    pub input_state_rack_test: u8,
+    // src:4e69 - Coin->credts, this gets decremented
+    pub counter_coin: u8,
+    // src:4e6a - Used to write coin counters
+    pub counter_coin_timeout: u8,
+    // src:4e6b - These are copied from the dipswitches
     pub number_of_coins_per_credit: u8,
     // src:4e6c
     number_of_coins_inserted: u8,
@@ -246,6 +257,11 @@ impl Game {
             subroutine_coin_inserted_state: 0,
             subroutine_playing_state: 0,
             
+            input_state_service0: 0,
+            input_state_coin_insert: 0,
+            input_state_rack_test: 0,
+            counter_coin: 0,
+            counter_coin_timeout: 0,
             number_of_coins_per_credit: 0,
             number_of_coins_inserted: 0,
             number_of_credits_per_coin: Coinage::FreePlay,
@@ -383,6 +399,73 @@ impl Game {
     }
 
     /* MEMORY_MAP: program_rom1 **********************************************/
+
+    /* src:0267 */
+    // debounce rack input / add credits (if 99 or over, return)
+    fn rack_input_add_credits(&mut self) {
+        // limit because screen drawing
+        if self.number_of_credits >= 99 {
+            self.hwoutput.coin_lockout = true;
+            return;
+        }
+
+        // use service_0 switch on/off to abstract insert coin
+        self.input_state_service0 &= 0b0000_0111;
+        self.input_state_service0 <<= 1;
+        self.input_state_service0 |= self.hwinput.service_mode_0 as u8;
+        if self.input_state_service0 == 0b0000_1100 {
+            self.coins_to_credits();
+        }
+
+        // use real money
+        self.input_state_coin_insert &= 0b0000_0111;
+        self.input_state_coin_insert <<= 1;
+        self.input_state_coin_insert |= self.hwinput.coin_insert as u8;
+        if self.input_state_coin_insert == 0b0000_1100 {
+          self.counter_coin+=1;
+        }
+
+        // use rack_test switch on/off
+        self.input_state_rack_test &= 0b0000_0111;
+        self.input_state_rack_test <<= 1;
+        self.input_state_rack_test |= self.hwinput.rack_test as u8;
+        if self.input_state_rack_test == 0b0000_1100 {
+            self.counter_coin+=1;
+        }
+
+    }
+    /* src:02ad - debounce coin input / add credits */
+    fn debounce_coin_input(&mut self) {
+        if self.counter_coin != 0 {
+            if self.counter_coin_timeout == 0 {
+                self.hwoutput.coin_counter = 1;
+                self.coins_to_credits();
+            }
+            if self.counter_coin_timeout == 8 {
+                self.hwoutput.coin_counter = 0;
+            }
+            if self.counter_coin_timeout < 10 {
+                self.counter_coin_timeout+=1;
+            } else {
+                self.counter_coin_timeout=0;
+                self.counter_coin-=1;
+            }
+        }
+    }
+    /* src:02df */
+    fn coins_to_credits(&mut self) {
+        self.number_of_coins_inserted+=1;
+        if self.number_of_coins_inserted >= self.number_of_coins_per_credit {
+            self.number_of_coins_inserted -= self.number_of_coins_per_credit;
+            self.number_of_credits += self.number_of_credits_per_coin as u8;
+            if self.number_of_credits > 99 {
+                // limit because screen drawing
+                self.number_of_credits = 99;
+            }
+            // sound insert
+            self.hwsound.effect[0].num = 1;
+        }
+    }
 
     /* src:02fd */
     fn blink_coin_lights(&mut self) {
@@ -597,20 +680,23 @@ impl Game {
         // SoundChannels::channel[0].set_wave 
 
         // 6. VARIABLE THINGS
+        // src:018c
         self.counter.update();
         self.timed_task_execute();
         self.change_mode();
         match self.mode {
             MainStateE::Init => {
+                // src:01b3
                 // channel_2_effect.num = 0;
                 // channel_3_effect.num = 0;
             },
             _ => {
-                // check_for_double_size_pacman();
+                // src:019b
+                // check_for_double_size_pacman(); TODO: NEVER USED
                 // no_cocktail_mode_update_sprites();
                 // cocktail_mode_update_sprites();
-                // rack_input__add_credits();
-                // debounce_coin_input__add_credits();
+                self.rack_input_add_credits();
+                self.debounce_coin_input();
                 self.blink_coin_lights();
             }
         }
@@ -642,7 +728,6 @@ impl Game {
                 }
             },
             // src:2400
-            // TODO: clean:4040->423f ?
             ScreenPart::Maze => {
                 for x in 0..=27 {
                     for y in 2..=33 {
@@ -796,17 +881,7 @@ impl Game {
         } else {
             self.hwvideo.put_text(TextId::Credit);
             let text = format!("{}", self.number_of_credits);
-            let textb = text.as_bytes();
-            let mut x = 9;
-            let y = 35;
-            for c in textb {
-                let p = Point::new(x,y);
-                x += 1;
-                match num::FromPrimitive::from_u8(*c) {
-                    Some(tile) => self.hwvideo.put_screen_tile(p, tile),
-                    None => {},
-                }
-            }
+            Text::print(&mut self.hwvideo, (9, 35), &text);
         }
     }
 
