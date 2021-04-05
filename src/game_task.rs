@@ -67,6 +67,8 @@ pub trait GameTask {
     fn task_new() -> VecDeque<TaskCoreE>;
     fn idle(&mut self) -> bool;
     fn setup_config_from_dip_switches(&mut self);
+
+    fn get_difficulty_settings(hard: bool) -> &'static [u8];
 }
 
 impl GameTask for Game {
@@ -180,7 +182,7 @@ impl GameTask for Game {
                         self.t03_pellets_draw(pellet);
                     },
                     //  4 src:253d
-                    TaskCoreE::ResetSpritesToDefaultValues(start) => {
+                    TaskCoreE::ResetSpritesToDefaultValues(is_end) => {
                         println!("TaskCoreE::ResetSpritesToDefaultValues");
                         self.sprite[SpriteName::Red as usize].s = SpriteId::GhostRight1;
                         self.sprite[SpriteName::Pink as usize].s = SpriteId::GhostRight1;
@@ -196,7 +198,7 @@ impl GameTask for Game {
                         self.sprite[SpriteName::Man as usize].c = ColorE::Yellow;
                         self.sprite[SpriteName::Fruit as usize].c = ColorE::Black;
 
-                        if start {
+                        if ! is_end {
                             // src:2576
                             self.sprite[SpriteName::Red as usize].p = Point::new(128,100);
                             self.sprite[SpriteName::Pink as usize].p = Point::new(128,124);
@@ -486,16 +488,20 @@ impl GameTask for Game {
         self.ghost_names_mode = self.hwinput.change_ghost_names;
 
         /* check dip switch 6 for difficulty */
-        self.p_difficulty_settings = if self.hwinput.hard_game {
-            // hard
-            vec![  1,  3,4,  6,7,8,9,10,11,12,13,14,15,16,17,      20]
-        } else {
-            // normal
-            vec![0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
-        };
+        self.is_hard_game = self.hwinput.hard_game; // RUST HACK: not a ref but a bool here
 
         /* check bit 7 on IN1 for upright / cocktail */
         self.cocktail_mode = self.hwinput.cocktail_cabinet;
+    }
+
+    fn get_difficulty_settings(hard: bool) -> &'static [u8] {
+        if hard {
+            // hard (RUST HACK: last 5 '20' never used, but for static rust array len compatibility)
+            &[  1,  3,4,  6,7,8,9,10,11,12,13,14,15,16,17,      20, 20,20,20,20,20]
+        } else {
+            // normal
+            &[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
+        }
     }
 
 

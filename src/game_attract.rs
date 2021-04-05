@@ -43,7 +43,7 @@ impl GameAttract for Game {
                 // attract_mode_prepare_screen
                 self.tasks.push_back(TaskCoreE::ClearWholeScreenOrMaze(ScreenPart::Maze));
                 self.tasks.push_back(TaskCoreE::SelectMazeColor(0));
-                self.tasks.push_back(TaskCoreE::ResetSpritesToDefaultValues(false));
+                self.tasks.push_back(TaskCoreE::ResetSpritesToDefaultValues(true));
                 self.tasks.push_back(TaskCoreE::ClearFruitAndPacmanPosition);
                 // src:0585
                 self.tasks.push_back(TaskCoreE::DrawTextOrGraphics(TextId::MsPacman, false));
