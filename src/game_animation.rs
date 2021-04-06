@@ -1,6 +1,6 @@
 use embedded_graphics::prelude::*;
 
-use crate::game::Game;
+use crate::game::{ Game, SpriteName };
 use crate::game_task::TaskCoreE;
 use crate::game_task_timed::{ TaskTimedNameE, TaskTimedE };
 use crate::game_counter::CurrentTime;
@@ -780,6 +780,8 @@ impl GameAnimationT {
 pub trait GameAnimation {
     fn animation_init(&mut self, id:AnimationE);
     fn animation(&mut self, id:AnimationE);
+    fn man_dead_animation(&mut self);
+    fn animate_dead_mspac(&mut self, sprite: SpriteId,counter: u16);
 
     // src:3556
     fn animation_code_assert_coord(c:i8) -> (i8, i8) {
@@ -798,6 +800,64 @@ pub trait GameAnimation {
 }
 
 impl GameAnimation for Game {
+
+    // src:1291
+    fn man_dead_animation(&mut self) {
+        match self.man_dead_animation_state {
+            1..=4 => {
+                self.man_dead_animation_counter += 1;
+                if self.man_dead_animation_counter == 120 {
+                    self.man_dead_animation_state = 5;
+                }
+            },
+            5 => {
+                self.clear_all_ghosts_from_screen();
+                self.animate_dead_mspac(SpriteId::MsDown1, 180);
+            },
+            6 => {
+                self.hwsound.effect[2].num |= 0x10;
+                self.animate_dead_mspac(SpriteId::MsLeft1, 195);
+            },
+            7 => self.animate_dead_mspac(SpriteId::MsUp1, 210),
+            8 => self.animate_dead_mspac(SpriteId::MsRight1, 225),
+            9 => self.animate_dead_mspac(SpriteId::MsDown1Bis, 240),
+            10 => self.animate_dead_mspac(SpriteId::MsLeft1Bis, 255),
+            11 => self.animate_dead_mspac(SpriteId::MsUp1Bis,270),
+            12 => self.animate_dead_mspac(SpriteId::MsRight1Bis,285),
+            13 => self.animate_dead_mspac(SpriteId::MsDown1Ter,300),
+            14 => self.animate_dead_mspac(SpriteId::MsLeft1Ter,315),
+            15 => {
+                self.hwsound.effect[2].num = 0;
+                self.animate_dead_mspac(SpriteId::MsUp1Ter,345);
+            },
+            16 => {
+                self.sprite[SpriteName::Man as usize].s = SpriteId::FruitStart;
+                self.man_dead_animation_counter += 1;
+                if self.man_dead_animation_counter == 440 {
+                    self.current_player.real_number_of_lives -= 1;
+                    self.current_player.number_of_lives_displayed -= 1;
+                    self.clear_fruit_and_pacman_position();
+                    self.subroutine_playing_state += 1;
+                }
+            },
+            _ => {},
+        }
+    }
+
+    // src:12d6
+    fn animate_dead_mspac(&mut self, sprite: SpriteId,counter: u16) {
+        let sprite_ok = if self.current_player_number == 1 && self.cocktail_mode {
+            sprite.flip_xy()
+        } else {
+            sprite
+        };
+        self.sprite[SpriteName::Man as usize].s = sprite_ok;
+
+        self.man_dead_animation_counter += 1;
+        if self.man_dead_animation_counter == counter {
+            self.man_dead_animation_state += 1;
+        }
+    }
 
     // src:3611
     fn animation_init(&mut self, id:AnimationE) {
