@@ -340,22 +340,22 @@ impl SpriteId {
         Sprite::new(self, PALETTE[palette_id as usize])
     }
 
-    pub fn flip_x(&mut self) -> SpriteId {
+    pub fn flip_x(&self) -> SpriteId {
         let v = *self as u8;
         return SpriteId::from_u8(v ^ 0b1000_0000).unwrap();
     }
 
-    pub fn flip_y(&mut self) -> SpriteId {
+    pub fn flip_y(&self) -> SpriteId {
         let v = *self as u8;
         return SpriteId::from_u8(v ^ 0b0100_0000).unwrap();
     }
 
-    pub fn flip_xy(&mut self) -> SpriteId {
+    pub fn flip_xy(&self) -> SpriteId {
         let v = *self as u8;
         return SpriteId::from_u8(v ^ 0b1100_0000).unwrap();
     }
 
-    pub fn set_flip_x(&mut self, flip: bool) -> SpriteId {
+    pub fn set_flip_x(&self, flip: bool) -> SpriteId {
         let v = *self as u8;
         if flip {
             return SpriteId::from_u8(v | 0b1000_0000).unwrap();
@@ -364,7 +364,7 @@ impl SpriteId {
         }
     }
 
-    pub fn set_flip_y(&mut self, flip: bool) -> SpriteId {
+    pub fn set_flip_y(&self, flip: bool) -> SpriteId {
         let v = *self as u8;
         if flip {
             return SpriteId::from_u8(v | 0b0100_000).unwrap();

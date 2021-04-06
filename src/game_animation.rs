@@ -808,7 +808,7 @@ impl GameAnimation for Game {
         self.animation_enable = true;
         self.animation_current = *ANIMATION[id as usize];
         self.number_of_ghost_killed_but_no_collision_for_yet = 1;
-        self.ghost_eat_ability = false;
+        self.man_dead_animation_state = 0;
         self.animation_cmd_table_stop = [false; 6];
     }
     

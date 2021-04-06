@@ -162,7 +162,10 @@ pub struct Game {
     // src:4da4
     pub number_of_ghost_killed_but_no_collision_for_yet: u8,
     // src:4da5
-    pub ghost_eat_ability: bool,
+    pub man_dead_animation_state: u8,
+
+    // src:4dc5
+    pub man_dead_animation_counter: u16,
 
     // src:4dce
     pub counter_blink_for_lights_coin_and_players: u8,
@@ -371,7 +374,9 @@ impl Game {
             timed_tasks: Self::timed_task_new(),
 
             number_of_ghost_killed_but_no_collision_for_yet: 0,
-            ghost_eat_ability: false,
+            man_dead_animation_state: 0,
+
+            man_dead_animation_counter: 0,
 
             counter_blink_for_lights_coin_and_players: 0,
 
@@ -801,7 +806,7 @@ impl Game {
     }
 
     // src: 267e
-    fn clear_all_ghosts_from_screen(&mut self) {
+    pub fn clear_all_ghosts_from_screen(&mut self) {
         self.sprite[SpriteName::Red as usize].p = Point::new(0,0);
         self.sprite[SpriteName::Pink as usize].p = Point::new(0,0);
         self.sprite[SpriteName::Blue as usize].p = Point::new(0,0);
