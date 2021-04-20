@@ -16,6 +16,8 @@ use std::time::{ Instant, Duration };
 mod mspacmab_data;
 mod mspacmab_data_maze;
 mod mspacmab_data_fruit;
+mod mspacmab_data_animation;
+mod credits;
 mod hardware;
 mod game_hw_video;
 mod game_hw_sound;
@@ -28,7 +30,8 @@ mod sprite;
 mod sprite_element;
 mod text;
 mod test_mode;
-mod game_animation;
+mod score;
+mod state_player;
 mod game_attract;
 mod game_playing;
 mod game_task;
@@ -45,7 +48,7 @@ use game::Game;
 use game_task::GameTask;
 
 
-const SLOW_DOWN_GAME: u64 = 10000;
+const SLOW_DOWN_GAME: u64 = 1; //10000;
 
 // big ms-pacman
 fn print_tile_big_mspacman(hwvideo: &mut GameHwVideo, x: i32, y:i32, c:ColorE) {
@@ -106,7 +109,7 @@ fn main() -> Result<(), core::convert::Infallible> {
     g.hwoutput.coin_lockout = false;
     g.hwoutput.coin_counter = 0;
     g.hwvideo.clear_tiles();
-    g.subroutine_init_state = 0;
+    g.main_state_init_done = false;
 
     g.update();
 
@@ -116,21 +119,31 @@ fn main() -> Result<(), core::convert::Infallible> {
     let mut vblank_time = Instant::now();
 
     'running: loop {
+        let start = Instant::now();
         if g.hwinput.update(&mut g.hwvideo.window) == false {
             break;
         }
+
+        let after_hw_update = Instant::now() - start;
+        g.timed_60_hz();
+        let after_timed = Instant::now() - start - after_hw_update;
+        g.update();
+        let after_update = Instant::now() - start - after_timed;
+
         // 60Hz
-        let now = Instant::now();
-        if now >= vblank_time {
-            vblank_time = now + Duration::from_millis(SLOW_DOWN_GAME * 1/60); // remove 10000 for real speed
-            println!("<VBlank>");
-            g.timed_60_hz();
-            g.update();
-        }
+        // let now = Instant::now();
+        // if now >= vblank_time {
+        //     vblank_time = now + Duration::from_millis(SLOW_DOWN_GAME * 1/60); // remove 10000 for real speed
+        //     println!("<VBlank>");
+        //     g.timed_60_hz();
+        //     g.update();
+        // }
 
         // we assume no more than 1/60 / 10 for idle time
-        thread::sleep(Duration::from_millis(1/60 / 10));
-        g.idle();
+        // thread::sleep(Duration::from_millis(1/60 / 10));
+        g.tasks.idle(&mut g.hwinput, &mut g.hwvideo, &mut g.hwsound, &mut g.credits, &mut g.score, &mut g.game_attract, &mut g.playing, &mut g.main_state, &mut g.main_state_init_done);
+        let after_idle = Instant::now() - start - after_update;
+        // println!("ahu:{:?}, at:{:?}, au:{:?}, ai:{:?}\n", after_hw_update, after_timed, after_update, after_idle);
     }
 
     return Ok(());

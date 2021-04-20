@@ -2,25 +2,27 @@ use std::collections::VecDeque;
 use embedded_graphics::prelude::*;
 use num_traits::FromPrimitive;
 
+use crate::hardware::{ HardwareInput, HardwareOutput };
+use crate::game_hw_sound::{ SoundChannels, Wave };
+use crate::game_hw_video::{ GameHwVideo, ScreenPart };
+
+use crate::credits::Credits;
+use crate::score::Score;
+use crate::mspacmab_data_fruit::{ FruitId, FRUIT};
 use crate::mspacmab_data_maze::PELLET;
 use crate::sprite::SpriteId;
-use crate::text::TextId;
+use crate::text::{TextId, Text};
 use crate::tile::TileId;
 use crate::palette::ColorE;
 
-use crate::game::Game;
-use crate::game::Direction;
+use crate::game::{ Game, WIDTH, HEIGHT };
 use crate::game::MainStateE;
-use crate::game::SpriteName;
 use crate::game_attract::GameAttract;
+use crate::game_playing::{ GamePlaying, SpriteName };
 
 use crate::hardware::Bonus;
 use crate::hardware::Coinage;
 
-pub enum ScreenPart {
-    All=0,
-    Maze=1,
-}
 
 /*
     Param(u8),
@@ -54,7 +56,7 @@ pub enum TaskCoreE {
     IncreaseMainSubroutineNumber,           // 22 src:23e8
     PacmanAiMovementWhenAttract,            // 23 src:28e3
     ResetThenPrintPlayersScore,             // 24 src:2ae0 (void)
-    UpdateScoreThenDraw,                    // 25 src:2a5a
+    UpdateScoreThenDraw(usize),             // 25 src:2a5a (score_index)
     DrawRemainingLivesBottomLeftScreen,     // 26 src:2b6a
     DrawFruitsBottomRightScreen,            // 27 src:2bea
     DrawTextOrGraphics(TextId, bool),       // 28 src:95e3 (TextId textid, bool clear)
@@ -63,21 +65,23 @@ pub enum TaskCoreE {
     DrawExtraLifePoints,                    // 31 src:26b2
 }
 
-pub trait GameTask {
-    fn task_new() -> VecDeque<TaskCoreE>;
-    fn idle(&mut self) -> bool;
-    fn setup_config_from_dip_switches(&mut self);
-
-    fn get_difficulty_settings(hard: bool) -> &'static [u8];
+pub struct GameTask {
+    tasks: VecDeque<TaskCoreE>,
 }
 
-impl GameTask for Game {
-    fn task_new() -> VecDeque<TaskCoreE> {
-        VecDeque::new()
+impl GameTask {
+    pub fn new() -> GameTask {
+        GameTask {
+            tasks: VecDeque::new()
+        }
+    }
+
+    pub fn add(&mut self, task: TaskCoreE) {
+        self.tasks.push_back(task);
     }
 
     // src:238d
-    fn idle(&mut self) -> bool {
+    pub fn idle(&mut self, hwinput: &HardwareInput, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, credits: &mut Credits, score: &mut Score, game_attract: &mut GameAttract, playing: &mut GamePlaying, main_state: &mut MainStateE, main_state_init_done: &mut bool) -> bool {
         // println!("idle");
         match self.tasks.pop_front() {
             Some(action) => {
@@ -85,7 +89,7 @@ impl GameTask for Game {
                     // 0
                     TaskCoreE::ClearWholeScreenOrMaze(part) => {
                         println!("TaskCoreE::ClearWholeScreenOrMaze");
-                        self.clear_whole_screen_or_maze(part);
+                        hwvideo.clear_whole_screen_or_maze(part);
                     },
                     // 1 src:24d7
                     TaskCoreE::SelectMazeColor(playing_state) => {      // 0: default maze color, 1: ?, 2: flashing maze color (White)
@@ -117,9 +121,9 @@ impl GameTask for Game {
                         /* controls the color of the mazes */
                         let color = match playing_state {
                             2 => ColorE::White, // white color for flashing at end of level
-                            _ => match self.subroutine_attract_state {
+                            _ => match game_attract.subroutine_attract_state {
                                 0 | 16 => {
-                                    let mut n = self.current_player.level as usize;
+                                    let mut n = playing.state_player[playing.current_player].level as usize;
                                     while n > 20 {
                                         n = n - (21-5);     // 5 <= n <= 20
                                     }
@@ -132,14 +136,14 @@ impl GameTask for Game {
                         // src:24e1
                         for y in 2..=33 {
                             for x in 0..=27 {
-                                self.hwvideo.put_screen_color(Point::new(x, y), color);
+                                hwvideo.put_screen_color(Point::new(x, y), color);
                             }
                         }
 
                         // ColorFruit color for first two lines
                         for y in 0..=1 {
                             for x in 0..=27 {
-                                self.hwvideo.put_screen_color(Point::new(x, y), ColorE::ColorFruit);
+                                hwvideo.put_screen_color(Point::new(x, y), ColorE::ColorFruit);
                             }
                         }
 
@@ -156,9 +160,9 @@ impl GameTask for Game {
                             */
 
                             // store into ghost house door (right side)
-                            self.hwvideo.put_screen_color(Point::new(14, 15), ColorE::ColorMazeLevel14_15_16_17AndGhostsDoor);
+                            hwvideo.put_screen_color(Point::new(14, 15), ColorE::ColorMazeLevel14_15_16_17AndGhostsDoor);
                             // store into ghost house door (left side)
-                            self.hwvideo.put_screen_color(Point::new(13, 15), ColorE::ColorMazeLevel14_15_16_17AndGhostsDoor);
+                            hwvideo.put_screen_color(Point::new(13, 15), ColorE::ColorMazeLevel14_15_16_17AndGhostsDoor);
                         }
 
                     },
@@ -166,216 +170,141 @@ impl GameTask for Game {
                     TaskCoreE::DrawMaze => {
                         println!("TaskCoreE::DrawMaze");
                         // Hack original data was too near hardware
-                        let maze = *self.get_current_maze_table();  // TODO: not sure about my rust here...?
+                        let maze = playing.get_current_maze_table();
                         for x in 0..28 {
                             for y in 0..36 {
-                                let tile_id = maze[y as usize][x as usize].clone();
+                                let tile_id = maze[y as usize][x as usize];
                                 let tile = TileId::from_u8(tile_id).unwrap();
-                                self.hwvideo.put_screen_tile(Point::new(x,y), tile);
+                                hwvideo.put_screen_tile(Point::new(x,y), tile);
                             }
                         }
 
                     },
                     //  3 src:2448
                     TaskCoreE::DrawPellets => {
-                        let pellet: &[ (u8,u8); 240 ] = self.get_data_from_current_level(&PELLET);
-                        self.t03_pellets_draw(pellet);
+                        let pellet: &[ (u8,u8); 240 ] = playing.get_data_from_current_level(&PELLET);
+                        self.t03_pellets_draw(hwvideo, playing, pellet);
                     },
                     //  4 src:253d
                     TaskCoreE::ResetSpritesToDefaultValues(is_end) => {
                         println!("TaskCoreE::ResetSpritesToDefaultValues");
-                        self.sprite[SpriteName::Red as usize].s = SpriteId::GhostRight1;
-                        self.sprite[SpriteName::Pink as usize].s = SpriteId::GhostRight1;
-                        self.sprite[SpriteName::Blue as usize].s = SpriteId::GhostRight1;
-                        self.sprite[SpriteName::Orange as usize].s = SpriteId::GhostRight1;
-                        self.sprite[SpriteName::Man as usize].s = SpriteId::Stork0;
-                        self.sprite[SpriteName::Fruit as usize].s = SpriteId::FruitStart;
+                        playing.sprite[SpriteName::Red as usize].s = SpriteId::GhostRight1;
+                        playing.sprite[SpriteName::Pink as usize].s = SpriteId::GhostRight1;
+                        playing.sprite[SpriteName::Blue as usize].s = SpriteId::GhostRight1;
+                        playing.sprite[SpriteName::Orange as usize].s = SpriteId::GhostRight1;
+                        playing.sprite[SpriteName::Man as usize].s = SpriteId::Stork0;
+                        playing.sprite[SpriteName::Fruit as usize].s = SpriteId::FruitStart;
 
-                        self.sprite[SpriteName::Red as usize].c = ColorE::Red;
-                        self.sprite[SpriteName::Pink as usize].c = ColorE::Pink;
-                        self.sprite[SpriteName::Blue as usize].c = ColorE::Blue;
-                        self.sprite[SpriteName::Orange as usize].c = ColorE::Orange;
-                        self.sprite[SpriteName::Man as usize].c = ColorE::Yellow;
-                        self.sprite[SpriteName::Fruit as usize].c = ColorE::Black;
+                        playing.sprite[SpriteName::Red as usize].c = ColorE::Red;
+                        playing.sprite[SpriteName::Pink as usize].c = ColorE::Pink;
+                        playing.sprite[SpriteName::Blue as usize].c = ColorE::Blue;
+                        playing.sprite[SpriteName::Orange as usize].c = ColorE::Orange;
+                        playing.sprite[SpriteName::Man as usize].c = ColorE::Yellow;
+                        playing.sprite[SpriteName::Fruit as usize].c = ColorE::Black;
 
                         if ! is_end {
-                            // src:2576
-                            self.sprite[SpriteName::Red as usize].p = Point::new(128,100);
-                            self.sprite[SpriteName::Pink as usize].p = Point::new(128,124);
-                            self.sprite[SpriteName::Blue as usize].p = Point::new(144,124);
-                            self.sprite[SpriteName::Orange as usize].p = Point::new(112,124);
-                            self.sprite[SpriteName::Man as usize].p = Point::new(128,196);
-
-                            // Next Tile XY Position (middle of tile)
-                            // Current Tile XY (these are updated after a move)
-                            // 29 == wraparound -> 61. 
-                            // 62 == wraparound -> 30.
-                            // y = bottom to top = decreases (34..62) len=28
-                            // x = left to right = decreases (30..61) len=31
-                            self.red_ghost_next_tile = (46,44);
-                            self.red_ghost_current_tile = (46,44);
-
-                            self.pink_ghost_next_tile = (46,47);
-                            self.pink_ghost_current_tile = (46,47);
-
-                            self.blue_ghost_next_tile = (48,47);
-                            self.blue_ghost_current_tile = (48,47);
-
-                            self.orange_ghost_next_tile = (44,47);
-                            self.orange_ghost_current_tile = (44,47);
-
-                            self.man_next_tile = (46,56);
-                            self.man_current_tile = (46,56);
-
-                            // TODO: Inverses all values here!
-
-                            // left, left_right
-                            self.red_ghost_move_direction = (1, 0);
-                            self.red_ghost_face_direction = (1, 0);
-
-                            // up_down, down
-                            self.pink_ghost_move_direction = (0, 1);
-                            self.pink_ghost_face_direction = (0, 1);
-
-                            // up_down, up
-                            self.blue_ghost_move_direction = (0, -1);
-                            self.blue_ghost_face_direction = (0, -1);
-
-                            // up_down, up
-                            self.orange_ghost_move_direction = (0, -1);
-                            self.orange_ghost_face_direction = (0, -1);
-
-                            // left, left_right
-                            self.man_move_direction = (1, 0);
-                            self.man_wanted_direction = (1, 0);
-
-                            self.red_ghost_dir = Direction::Down;
-                            self.red_ghost_dir_face = Direction::Down;
-
-                            self.pink_ghost_dir = Direction::Left;
-                            self.pink_ghost_dir_face = Direction::Left;
-
-                            self.blue_ghost_dir = Direction::Up;
-                            self.blue_ghost_dir_face = Direction::Up;
-
-                            self.orange_ghost_dir = Direction::Up;
-                            self.orange_ghost_dir_face = Direction::Up;
-
-                            self.man_orientation = Direction::Left;
-                            self.wanted_man_orientation = Direction::Left;
-
-                            self.sprite[SpriteName::Fruit as usize].p = Point::new(0,0);
+                            playing.new_is_not_end();
                         } else {
-                            //  sets up sprites for character introduction screen
-                            // src:260f
-
-                            // sprites_coord_yx
-                            self.sprite[SpriteName::Red as usize].p = Point::new(0,148);
-                            self.sprite[SpriteName::Pink as usize].p = Point::new(0,148);
-                            self.sprite[SpriteName::Blue as usize].p = Point::new(0,148);
-                            self.sprite[SpriteName::Orange as usize].p = Point::new(0,148);
-
-                            // sprites_coord_middle_of_tile
-                            self.red_ghost_next_tile = ( 30, 50);
-                            self.pink_ghost_next_tile = ( 30, 50);
-                            self.blue_ghost_next_tile = ( 30, 50);
-                            self.orange_ghost_next_tile = ( 30, 50);
-
-                            // TODO: Inverses all values here!
-
-                            // sprites_current_tile_xy
-                            self.red_ghost_current_tile = ( 30, 50);
-                            self.pink_ghost_current_tile = ( 30, 50);
-                            self.blue_ghost_current_tile = ( 30, 50);
-                            self.orange_ghost_current_tile = ( 30, 50);
-
-                            // sprites_move_xy_direction
-                            // down, up_down
-                            self.red_ghost_move_direction = (1, 0);
-                            self.pink_ghost_move_direction = (1, 0);
-                            self.blue_ghost_move_direction = (1, 0);
-                            self.orange_ghost_move_direction = (1, 0);
-
-                            // sprites_face_xy_direction
-                            self.red_ghost_face_direction = (1, 0);
-                            self.pink_ghost_face_direction = (1, 0);
-                            self.blue_ghost_face_direction = (1, 0);
-                            self.orange_ghost_face_direction = (1, 0);
-
-                            self.man_move_direction = (1, 0);
-                            self.man_wanted_direction = (1, 0);
-
-                            // src:2661 (9 next lines)
-                            // sprites_ghosts_previous_orientation
-                            self.red_ghost_dir = Direction::Left;
-                            self.pink_ghost_dir = Direction::Left;
-                            self.blue_ghost_dir = Direction::Left;
-                            self.orange_ghost_dir = Direction::Left;
-
-                            // sprites_ghosts_face_enum_direction
-                            self.red_ghost_dir_face = Direction::Left;
-                            self.pink_ghost_dir_face = Direction::Left;
-                            self.blue_ghost_dir_face = Direction::Left;
-                            self.orange_ghost_dir_face = Direction::Left;
-
-                            // man_orientation
-                            self.man_orientation = Direction::Left;
-                            self.wanted_man_orientation = Direction::Left;
-
-                            // pacman_tile_pos_in_attract_and_cut_scenes
-                            self.man_next_tile = (31, 50);
-
-                            // pacman_position_tile_position
-                            self.man_current_tile = (31, 50);
+                            playing.new_is_end();
                         }
 
+                    },
+                    // 5 src:268b
+                    TaskCoreE::ResetGhostHomeCounter => {
+// TODO
                     },
                     // 6 src:240d
                     TaskCoreE::ClearColorRam => {
                         println!("TaskCoreE::ClearColorRam");
-                        self.clear_color_ram();
+                        hwvideo.clear_color_ram();
                     },
                     // 7 src:2698
                     TaskCoreE::SetGameToAttractMode => {
                         println!("TaskCoreE::SetGameToAttractMode");
-                        self.mode = MainStateE::Attract;
-                        self.subroutine_init_state = 0;
+                        *main_state = MainStateE::Attract;
+                        *main_state_init_done = false;
+                    },
+                    // 8 src:2730
+                    TaskCoreE::RedGhostAi => {
+// TODO
+                    },
+                    //  9 src:276c
+                    TaskCoreE::PinkGhostAi => {
+// TODO
+                    },
+                    // 10 src:27a9
+                    TaskCoreE::BlueGhostAi => {
+// TODO
+                    },
+                    // 11 src:27f1
+                    TaskCoreE::OrangeGhostAi => {
+// TODO
+                    },
+                    // 12 src:283b
+                    TaskCoreE::RedGhostMovementWhenPowerPill => {
+// TODO
+                    },
+                    // 13 src:2865
+                    TaskCoreE::PinkGhostMovementWhenPowerPill => {
+// TODO
+                    },
+                    // 14 src:288f
+                    TaskCoreE::BlueGhostMovementWhenPowerPill => {
+// TODO
+                    },
+                    // 15 src:28b9
+                    TaskCoreE::OrangeGhostMovementWhenPowerPill => {
+// TODO
+                    },
+                    // 16 src:070e
+                    TaskCoreE::SetupDifficulty => {
+// TODO
+                    },
+                    // 17 src:26a2
+                    TaskCoreE::ClearFullDataGame => {
+                        *playing = GamePlaying::new();
+                        credits.counter_blink_for_lights_coin_and_players = 0;
+                        credits.can_led_blink = false;
                     },
                     // 18 src:24c9
                     TaskCoreE::ClearsPillsAndPowerPills => {
                         println!("TaskCoreE::ClearsPillsAndPowerPills");
-                        self.clears_all_pills();
+                        playing.clears_all_pills();
                     }
+                    // 19 src:2a35
+                    TaskCoreE::ClearsSprites => {
+// TODO
+                    },
                     // 20 src:26d0 (void)
                     TaskCoreE::SetupConfigFromDipSwitches => {
                         println!("TaskCoreE::SetupConfigFromDipSwitches");
-                        self.setup_config_from_dip_switches();
+                        credits.setup_config_from_dip_switches(hwinput, playing);
                     },
                     // 24 src:2ae0 (void)
                     TaskCoreE::ResetThenPrintPlayersScore => {
                         println!("TaskCoreE::ResetThenPrintPlayersScore");
-                        self.hwvideo.put_text(TextId::HighScore);
-
-                        self.score_p1 = 0;
-                        self.p1_got_bonus_life = false;
-
-                        self.score_p2 = 0;
-                        self.p2_got_bonus_life = false;
-
-                        self.draw_score_to_screen(self.score_p1, ( 1, 1) );
-                        if self.number_of_players != 0 {
-                            self.draw_score_to_screen(self.score_p2, (20, 1) );
+                        hwvideo.put_text(TextId::HighScore);
+                        score.reset_score_players();
+                        score.draw_score_to_screen(hwvideo, score.score[0].0, ( 5, 1) );
+                        if credits.number_of_players != 0 {
+                            score.draw_score_to_screen(hwvideo, score.score[1].0, (24, 1) );
                         }
+                    },
+                    // 25 src:2a5a
+                    // score = # of ghosts eaten +1 (2-5)
+                    TaskCoreE::UpdateScoreThenDraw(score_index) => {
+                        println!("TaskCoreE::UpdateScoreThenDraw");
+                        score.T19_update_score_then_draw(hwvideo, hwsound, playing, credits, *main_state, score_index);
                     },
                     // 26 src:2b6a
                     TaskCoreE::DrawRemainingLivesBottomLeftScreen => {
                         println!("TaskCoreE::DrawRemainingLivesBottomLeftScreen");
-                        self.t1a_draw_remaining_lives_bottom_screen();
+                        credits.t1a_draw_remaining_lives_bottom_screen(hwvideo, playing, *main_state);
                     },
                     // 27 src:2bea
                     TaskCoreE::DrawFruitsBottomRightScreen => {
                         println!("TaskCoreE::DrawFruitsBottomRightScreen");
-                        return self.draw_fruits_bottom_right_screen();
+                        return self.draw_fruits_bottom_right_screen(hwvideo, playing, *main_state);
                     },
                     // 28 src:95e3 (TextId textid, bool clear)
                     TaskCoreE::DrawTextOrGraphics(textid, clear) => {
@@ -387,46 +316,46 @@ impl GameTask for Game {
                                 // src:960B
                                 // Yes, draw the MS PAC MAN graphic which appears between "ADDITIONAL" and "AT 10,000 pts"
                                 // src:9627 src:9616 (mspac_graph)
-                                self.hwvideo.put_screen( Point::new(13,23), TileId::MspacBigUpperLeft,  ColorE::Yellow);
-                                self.hwvideo.put_screen( Point::new(14,23), TileId::MspacBigUpperRight, ColorE::Yellow);
-                                self.hwvideo.put_screen( Point::new(14,24), TileId::MspacBigLowerRight, ColorE::Yellow);
-                                self.hwvideo.put_screen( Point::new(13,24), TileId::MspacBigLowerLeft,  ColorE::Yellow);
+                                hwvideo.put_screen( Point::new(13,23), TileId::MspacBigUpperLeft,  ColorE::Yellow);
+                                hwvideo.put_screen( Point::new(14,23), TileId::MspacBigUpperRight, ColorE::Yellow);
+                                hwvideo.put_screen( Point::new(14,24), TileId::MspacBigLowerRight, ColorE::Yellow);
+                                hwvideo.put_screen( Point::new(13,24), TileId::MspacBigLowerLeft,  ColorE::Yellow);
                             },
                             TextId::AdditionalAt000Pts => {
                                 // src:95f6
-                                self.draw_the_midway_logo_and_copyright();
+                                game_attract.draw_the_midway_logo_and_copyright(self, hwvideo);
                                 // src:95fd
-                                if let Bonus::None = self.hwinput.bonus {
+                                if let Bonus::None = hwinput.bonus {
                                     final_textid = TextId::Space4;
                                 }
                             },
                             TextId::Ready => {
                                 // 963c
                                 // clear the intermission indicator
-                                self.animation_enable = false;
+                                game_attract.animation_enable = false;
                             },
                             _ => {},
                         }
 
                         if clear {
-                            self.hwvideo.del_text(final_textid);
+                            hwvideo.del_text(final_textid);
                         } else {
-                            self.hwvideo.put_text(final_textid);
+                            hwvideo.put_text(final_textid);
                         }
 
                     },
                     // 30 src:2675 (void)
                     TaskCoreE::ClearFruitAndPacmanPosition => {
                         println!("TaskCoreE::ClearFruitAndPacmanPosition");
-                        self.clear_fruit_and_pacman_position();
+                        playing.clear_fruit_and_pacman_position();
                     },
                     // 31 src:26b2
                     TaskCoreE::DrawExtraLifePoints => {
                         println!("TaskCoreE::DrawExtraLifePoints");
-                        let t0 = TileId::from_u8(b'0' + self.bonus / 10).unwrap();
-                        let t1 = TileId::from_u8(b'0' + self.bonus % 10).unwrap();
-                        self.hwvideo.put_screen_tile(Point::new(19,24), t0);
-                        self.hwvideo.put_screen_tile(Point::new(20,24), t1);
+                        let t0 = TileId::from_u8(b'0' + credits.bonus / 10).unwrap();
+                        let t1 = TileId::from_u8(b'0' + credits.bonus % 10).unwrap();
+                        hwvideo.put_screen_tile(Point::new(19,24), t0);
+                        hwvideo.put_screen_tile(Point::new(20,24), t1);
                     }
                     _ => {
                     },
@@ -441,68 +370,62 @@ impl GameTask for Game {
         true
     }
 
-    // src:26d0
-    fn setup_config_from_dip_switches(&mut self) {
-        self.number_of_credits_per_coin = self.hwinput.coinage;
-        if let Coinage::FreePlay = self.number_of_credits_per_coin {
-            self.number_of_credits = 255;
+    // src:2453
+    fn t03_pellets_draw(&mut self, hwvideo: &mut GameHwVideo, playing: &mut GamePlaying, pellets_coord: &[ (u8,u8); 240 ]) {
+        let mut pellet_index = 0;
+        for byte_index in 0..30 {
+            let mut current_pills = playing.state_player[playing.current_player].is_pill_present[byte_index];
+            for _bit_index in 0..8 {
+                let p = pellets_coord[pellet_index];
+                if current_pills >> 7 == 1 {
+                    hwvideo.put_screen_tile(Point::new(p.0 as i32,p.1 as i32), TileId::Pill1);
+                }
+                current_pills <<= 1;
+                pellet_index += 1;
+            }
         }
-        /*
-        number_of_coins_per_credit => number_of_credits_per_coin
-                                    0 => 0
-                                    1 => 1
-                                    1 => 2
-                                    2 => 1
-            Historical : 
-                number_of_coins_per_credit = (number_of_credits_per_coin >> 1) + (number_of_credits_per_coin & 1);
-                number_of_credits_per_coin = number_of_coins_per_credit & 2 ^ number_of_credits_per_coin;
-        */
-        self.number_of_coins_per_credit = match self.number_of_credits_per_coin {
-            Coinage::FreePlay => 0,
-            Coinage::For1coin1credit => 1,
-            Coinage::For1coin2credits => 2,
-            Coinage::For2coins1credit => 1,
-        };
-
-        /* check dip switches 2 and 3.  number of starting lives per game */
-        self.number_of_lives = self.hwinput.live as u8 + 1;
-        if self.number_of_lives == 4 {
-            self.number_of_lives += 2;
-        }
-
-        /* check dip switches 4 and 5.  points for bonus pac man */
-        /* CONFIG for extra life
-            10 for 10.000 pts
-            15 for 15.0000 pts
-            20 for 20_0000 pts
-            FF for no extra life
-        */
-        self.bonus = match self.hwinput.bonus {
-            Bonus::Pts10000 => 10,
-            Bonus::Pts15000 => 15,
-            Bonus::Pts20000 => 20,
-            Bonus::None     => 255,
-        };
-
-        /* check dip switch 7 for ghost names during attract mode */
-        self.ghost_names_mode = self.hwinput.change_ghost_names;
-
-        /* check dip switch 6 for difficulty */
-        self.is_hard_game = self.hwinput.hard_game; // RUST HACK: not a ref but a bool here
-
-        /* check bit 7 on IN1 for upright / cocktail */
-        self.cocktail_mode = self.hwinput.cocktail_cabinet;
+        playing.t03_power_pills_draw(hwvideo);
     }
 
-    fn get_difficulty_settings(hard: bool) -> &'static [u8] {
-        if hard {
-            // hard (RUST HACK: last 5 '20' never used, but for static rust array len compatibility)
-            &[  1,  3,4,  6,7,8,9,10,11,12,13,14,15,16,17,      20, 20,20,20,20,20]
+
+    // src:2b80
+    fn draw_fruit_color(&mut self, hwvideo: &mut GameHwVideo, c: ColorE, p: (i32, i32) ) {
+        let point = Point::new(p.0, p.1);
+        hwvideo.put_screen_color(point, c);
+
+        let point = Point::new(p.0 - 1, p.1);
+        hwvideo.put_screen_color(point, c);
+
+        let point = Point::new(p.0, p.1 + 1);
+        hwvideo.put_screen_color(point, c);
+
+        let point = Point::new(p.0 - 1, p.1 + 1);
+        hwvideo.put_screen_color(point, c);
+    }
+
+    // src:2bea
+    fn draw_fruits_bottom_right_screen(&mut self, hwvideo: &mut GameHwVideo, playing: &mut GamePlaying, main_state: MainStateE) -> bool {
+        if let MainStateE::Attract = main_state {
+            return false;   // do not update screen
+        }
+        let level:usize = if playing.state_player[playing.current_player].level > 7 {
+            7
         } else {
-            // normal
-            &[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
-        }
-    }
+            playing.state_player[playing.current_player].level as usize
+        };
 
+        let mut x=25;
+        for i in 0..level {
+            let f = FRUIT[i];
+            hwvideo.draw_big_tile( f.0, (x, 34) );
+            self.draw_fruit_color( hwvideo, f.1, (x, 34) );
+            x -= 2;
+        }
+        for _i in level..7 {
+            hwvideo.draw_big_tile_blank( (x, 34) );
+            x -= 2;
+        }
+        return true;
+    }
 
 }

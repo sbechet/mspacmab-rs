@@ -7,15 +7,6 @@ use embedded_graphics_simulator::{
     Window, 
 };
 
-
-#[derive(Copy, Clone, Debug)]
-pub enum Coinage {
-    FreePlay=0,
-    For1coin1credit=1,
-    For1coin2credits=2,
-    For2coins1credit=3,
-}
-
 #[derive(Copy, Clone, Debug)]
 pub enum Live {
     One=0,
@@ -30,6 +21,14 @@ pub enum Bonus {
     Pts15000=1,
     Pts20000=2,
     None=3,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Coinage {
+    FreePlay=0,
+    For1coin1credit=1,
+    For1coin2credits=2,
+    For2coins1credit=3,
 }
 
 #[derive(Debug)]

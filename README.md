@@ -28,7 +28,7 @@ Assume on average 4 clock cycles per instruction
 - [x] Tile
 - [x] Sprites
 - [x] DrawText
-- [x] test_mode
+- [x] test_main_state
 - [ ] Game { hardware_vars, game_vars }; impl Game { new(), run(), test_mode(), timed60Hz() }
 - [ ] stm32f103 hardware using `stm32f103-vga-rs` project as video card (size ok: 296x364)
 - [ ] split and cleanup code using more files (ghost, man, maze,...)

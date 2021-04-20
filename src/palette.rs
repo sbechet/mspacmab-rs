@@ -62,7 +62,7 @@ pub const PALETTE: [ [u32; 4]; 32] = [
     [BLACK,LIGHT_BROWN2,BLACK,GREY],    // 31
 ];
 
-#[derive(Copy, Clone, Debug, FromPrimitive, ToPrimitive)]
+#[derive(Copy, Clone, Debug, PartialEq, FromPrimitive, ToPrimitive)]
 pub enum ColorE {
     Black=0,
     Red=1,

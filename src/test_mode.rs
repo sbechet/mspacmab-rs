@@ -6,12 +6,10 @@ use embedded_graphics::{
 };
 
 use crate::game::{ Game, MainStateE };
-// use crate::game_hw_video::GameHwVideo;
+use crate::hardware::{Bonus, Coinage, Live};
 use crate::palette::ColorE;
-use crate::text::{TextId, Text};
+use crate::text::TextId;
 use crate::tile::TileId;
-use crate::hardware::{Bonus, Coinage, Joystick, Live};
-use crate::hardware::HardwareInput;
 
 const WIDTH: usize = 28;
 const HEIGHT: usize = 36;
@@ -83,8 +81,8 @@ pub fn test_mode(g: &mut Game) -> bool {
     // src:3188
     loop {
         // src:318b
-        g.mode = MainStateE::Init;
-        g.subroutine_init_state = 1;
+        g.main_state_init_done = true;
+        g.main_state = MainStateE::Init;
 
         if g.hwinput.update(&mut g.hwvideo.window) == false {
             return false;

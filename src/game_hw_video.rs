@@ -21,6 +21,11 @@ pub const WIDTH: usize = 28;
 pub const HEIGHT: usize = 36;
 const MAX_SPRITES: usize = 8;
 
+pub enum ScreenPart {
+    All=0,
+    Maze=1,
+}
+
 #[derive(Copy, Clone)]
 pub struct SpriteElement {
     pub p: Point,
@@ -88,6 +93,75 @@ impl GameHwVideo {
 
         self.window.update(&self.display);
     }
+
+    // src:23ed
+    pub fn clear_whole_screen_or_maze(&mut self, part:ScreenPart) {
+        match part {
+            // src:23f3
+            ScreenPart::All => {
+                for y in 0..HEIGHT {
+                    for x in 0..WIDTH {
+                        self.put_screen_tile(Point::new(x as i32,y as i32), TileId::Space);
+                    }
+                }
+            },
+            // src:2400
+            ScreenPart::Maze => {
+                for x in 0..=27 {
+                    for y in 2..=33 {
+                        self.put_screen_tile(Point::new(x as i32,y as i32), TileId::Space);
+                    }
+                }
+            }
+        }
+    }
+
+    // src:240d
+    pub fn clear_color_ram(&mut self) {
+        for y in 0..HEIGHT {
+            for x in 0..WIDTH {
+                self.put_screen_color(Point::new(x as i32,y as i32), ColorE::Black);
+            }
+        }
+    }
+
+    // src:2b7e
+    pub fn draw_big_tile_blank(&mut self, p: (i32, i32) ) {
+        let t = TileId::Space;
+
+        let point = Point::new(p.0, p.1);
+        self.put_screen_tile(point, t);
+
+        let point = Point::new(p.0 - 1, p.1);
+        self.put_screen_tile(point, t);
+
+        let point = Point::new(p.0, p.1 + 1);
+        self.put_screen_tile(point, t);
+
+        let point = Point::new(p.0 - 1, p.1 + 1);
+        self.put_screen_tile(point, t);
+    }
+
+    // src:2b8f
+    pub fn draw_big_tile(&mut self, t: TileId, p: (i32, i32) ) {
+        let tnum = t as u8;
+
+        let point = Point::new(p.0, p.1);
+        self.put_screen_tile(point, t);
+
+        let point = Point::new(p.0 - 1, p.1);
+        let tnext = TileId::from_u8(tnum + 1).unwrap();
+        self.put_screen_tile(point, tnext);
+
+        let point = Point::new(p.0, p.1 + 1);
+        let tnext = TileId::from_u8(tnum + 2).unwrap();
+        self.put_screen_tile(point, tnext);
+
+        let point = Point::new(p.0 - 1, p.1 + 1);
+        let tnext = TileId::from_u8(tnum + 3).unwrap();
+        self.put_screen_tile(point, tnext);
+    }
+
 
     /// draw test_mode like fullscreen grid
     // src:3253, src:3ae2
