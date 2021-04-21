@@ -2,26 +2,24 @@ use std::collections::VecDeque;
 use embedded_graphics::prelude::*;
 use num_traits::FromPrimitive;
 
-use crate::hardware::{ HardwareInput, HardwareOutput };
-use crate::game_hw_sound::{ SoundChannels, Wave };
+use crate::hardware::HardwareInput;
+use crate::game_hw_sound::SoundChannels;
 use crate::game_hw_video::{ GameHwVideo, ScreenPart };
 
 use crate::credits::Credits;
 use crate::score::Score;
-use crate::mspacmab_data_fruit::{ FruitId, FRUIT};
+use crate::mspacmab_data_fruit::FRUIT;
 use crate::mspacmab_data_maze::PELLET;
 use crate::sprite::SpriteId;
-use crate::text::{TextId, Text};
+use crate::text::TextId;
 use crate::tile::TileId;
 use crate::palette::ColorE;
 
-use crate::game::{ Game, WIDTH, HEIGHT };
 use crate::game::MainStateE;
 use crate::game_attract::GameAttract;
 use crate::game_playing::{ GamePlaying, SpriteName };
 
 use crate::hardware::Bonus;
-use crate::hardware::Coinage;
 
 
 /*
@@ -294,7 +292,7 @@ impl GameTask {
                     // score = # of ghosts eaten +1 (2-5)
                     TaskCoreE::UpdateScoreThenDraw(score_index) => {
                         println!("TaskCoreE::UpdateScoreThenDraw");
-                        score.T19_update_score_then_draw(hwvideo, hwsound, playing, credits, *main_state, score_index);
+                        score.t19_update_score_then_draw(hwvideo, hwsound, playing, credits, *main_state, score_index);
                     },
                     // 26 src:2b6a
                     TaskCoreE::DrawRemainingLivesBottomLeftScreen => {

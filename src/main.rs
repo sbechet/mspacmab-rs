@@ -97,11 +97,6 @@ fn print_tile_heart(hwvideo: &mut GameHwVideo, x: i32, y:i32, c:ColorE) {
 fn main() -> Result<(), core::convert::Infallible> {
     let mut g = Game::new();
 
-    // if test_mode(&mut g) == false {
-    //     return Ok(());
-    // }
-    // println!("Return from test_mode()");
-
     g.hwoutput.sound_enabled = true;
     g.hwoutput.flip_screen = false;
     g.hwoutput.lamp1 = false;
@@ -125,7 +120,19 @@ fn main() -> Result<(), core::convert::Infallible> {
         }
 
         let after_hw_update = Instant::now() - start;
-        g.timed_60_hz();
+
+        // vblank
+        if g.hwinput.service_mode_1 {
+            g.hwinput.service_mode_1 = ! test_mode(&mut g.hwinput, &mut g.hwoutput, &mut g.hwvideo, &mut g.hwsound, &mut g.main_state, &mut g.main_state_init_done);
+            // hack
+            if ! g.hwinput.service_mode_1 {
+                g.main_state_init_done = false;
+            }
+    
+        } else {
+            g.timed_60_hz();
+        }
+
         let after_timed = Instant::now() - start - after_hw_update;
         g.update();
         let after_update = Instant::now() - start - after_timed;

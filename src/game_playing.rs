@@ -191,7 +191,7 @@ pub struct GamePlaying {
     // src:4dc7
     current_orientation_we_are_trying: Direction,
     // src:4dc8
-    counter__used_to_change_ghost_colors_under_big_pill_effects: u8,
+    counter_used_to_change_ghost_colors_under_big_pill_effects: u8,
     // src:4dc9
     pointer_to_pick_a_random_value_from_the_ROM: u16,
     // src:4dcb
@@ -202,7 +202,7 @@ pub struct GamePlaying {
 
 
     // src:4dcf
-    counter__to_handle_power_pill_flashes: u8,
+    counter_to_handle_power_pill_flashes: u8,
 
     // src:4dd0
     // how many ghosts eaten this powerpill? 0..4?
@@ -381,12 +381,12 @@ impl GamePlaying {
             man_dead_animation_counter: 0,
             
             current_orientation_we_are_trying: Direction::Right,
-            counter__used_to_change_ghost_colors_under_big_pill_effects: 0,
+            counter_used_to_change_ghost_colors_under_big_pill_effects: 0,
             pointer_to_pick_a_random_value_from_the_ROM: 0,
             counter_while_ghosts_are_blue: 0,
 
 
-            counter__to_handle_power_pill_flashes: 0,
+            counter_to_handle_power_pill_flashes: 0,
             counter_current_number_of_killed_ghosts: 0,
             killed_ghost_animation_state: 0,
             fruit_points: 0,
@@ -918,7 +918,7 @@ impl GamePlaying {
             let score_index = 2 + self.counter_current_number_of_killed_ghosts;  // index 2 for first ghost
             self.counter_current_number_of_killed_ghosts += 1;
             // Rust HACK, here we use tasks, because we don't want attribut propagation fn for T19...
-            //self.T19_update_score_then_draw(score_index);
+            //self.t19_update_score_then_draw(score_index);
             tasks.add(TaskCoreE::UpdateScoreThenDraw(score_index));
             hwsound.effect[2].num |= 0b0000_1000;
         }

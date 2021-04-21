@@ -131,7 +131,7 @@ impl HardwareInput {
             service_mode_0: false,
             // In1
             joystick2: Joystick::new(),
-            service_mode_1: false,
+            service_mode_1: true,
             player1_start_button: false,
             player2_start_button: false,
             cocktail_cabinet: false,

@@ -1,25 +1,13 @@
-use std::collections::VecDeque;
-use num_traits::FromPrimitive;
-
-use embedded_graphics::prelude::*;
-
-use embedded_graphics_simulator::{
-    Window, 
-};
-
 use crate::score::Score;
-use crate::hardware::{ HardwareInput, HardwareOutput, Bonus, Coinage };
-use crate::game_hw_video::{ GameHwVideo, SpriteElement, ScreenPart };
+use crate::hardware::{ HardwareInput, HardwareOutput };
+use crate::game_hw_video::{ GameHwVideo, ScreenPart };
 use crate::game_hw_sound::{ SoundChannels, Wave };
 use crate::credits::Credits;
 // use crate::test_mode::{ test_mode };
-use crate::palette::{PALETTE, ColorE};
-use crate::tile::TileId;
 use crate::game_attract::GameAttract;
-use crate::game_playing::{ GamePlaying, SpriteName };
+use crate::game_playing::GamePlaying;
 use crate::game_task::{GameTask, TaskCoreE};
-use crate::game_counter::CurrentTime;
-use crate::game_task_timed::{GameTaskTimed, TaskTimedNameE};
+use crate::game_task_timed::GameTaskTimed;
 
 #[derive(PartialEq, Copy, Clone)]
 pub enum MainStateE {
@@ -28,10 +16,6 @@ pub enum MainStateE {
     CoinInserted=2,
     Playing=3,
 }
-
-
-pub const WIDTH: usize = 28;
-pub const HEIGHT: usize = 36;
 
 pub struct Game {
     pub hwvideo: GameHwVideo,
