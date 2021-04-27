@@ -13,6 +13,7 @@ use embedded_graphics_simulator::{
 use std::thread;
 use std::time::{ Instant, Duration };
 
+// TODO: after full retro, create tree
 mod mspacmab_data;
 mod mspacmab_data_maze;
 mod mspacmab_data_fruit;
@@ -37,6 +38,7 @@ mod game_playing;
 mod game_task;
 mod game_task_timed;
 mod game;
+mod ghost_difficulty;
 
 use test_mode::test_mode;
 use game_hw_video::GameHwVideo;

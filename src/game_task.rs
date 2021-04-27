@@ -4,7 +4,7 @@ use num_traits::FromPrimitive;
 
 use crate::hardware::HardwareInput;
 use crate::game_hw_sound::SoundChannels;
-use crate::game_hw_video::{ GameHwVideo, ScreenPart };
+use crate::game_hw_video::{ GameHwVideo, ScreenPart, WIDTH, HEIGHT };
 
 use crate::credits::Credits;
 use crate::score::Score;
@@ -17,9 +17,10 @@ use crate::palette::ColorE;
 
 use crate::game::MainStateE;
 use crate::game_attract::GameAttract;
-use crate::game_playing::{ GamePlaying, SpriteName };
+use crate::game_playing::{ GamePlaying, SpriteName, GhostSubState };
 
 use crate::hardware::Bonus;
+use crate::ghost_difficulty::{ GhostDifficulty, GHOST_DIFFICULTY };
 
 
 /*
@@ -34,7 +35,7 @@ pub enum TaskCoreE {
     DrawMaze,                               //  2 src:2419
     DrawPellets,                            //  3 src:2448
     ResetSpritesToDefaultValues(bool),      //  4 src:253d (bool game_start)
-    ResetGhostHomeCounter,                  //  5 src:268b
+    ResetGhostHomeCounter(bool),            //  5 src:268b
     ClearColorRam,                          //  6 src:240d (void)
     SetGameToAttractMode,                   //  7 src:2698 (void)
     RedGhostAi,                             //  8 src:2730
@@ -48,7 +49,7 @@ pub enum TaskCoreE {
     SetupDifficulty,                        // 16 src:070e
     ClearFullDataGame,                      // 17 src:26a2
     ClearsPillsAndPowerPills,               // 18 src:24c9
-    ClearsSprites,                          // 19 src:2a35
+    ClearPills,                          // 19 src:2a35
     SetupConfigFromDipSwitches,             // 20 src:26d0 (void)
     UpdateScreenPillConfigToVideoRam,       // 21 src:2487
     IncreaseMainSubroutineNumber,           // 22 src:23e8
@@ -133,15 +134,15 @@ impl GameTask {
 
                         // src:24e1
                         for y in 2..=33 {
-                            for x in 0..=27 {
-                                hwvideo.put_screen_color(Point::new(x, y), color);
+                            for x in 0..WIDTH {
+                                hwvideo.put_screen_color(Point::new(x as i32, y), color);
                             }
                         }
 
                         // ColorFruit color for first two lines
                         for y in 0..=1 {
-                            for x in 0..=27 {
-                                hwvideo.put_screen_color(Point::new(x, y), ColorE::ColorFruit);
+                            for x in 0..WIDTH {
+                                hwvideo.put_screen_color(Point::new(x as i32, y), ColorE::ColorFruit);
                             }
                         }
 
@@ -169,11 +170,11 @@ impl GameTask {
                         println!("TaskCoreE::DrawMaze");
                         // Hack original data was too near hardware
                         let maze = playing.get_current_maze_table();
-                        for x in 0..28 {
-                            for y in 0..36 {
+                        for x in 0..WIDTH {
+                            for y in 0..HEIGHT {
                                 let tile_id = maze[y as usize][x as usize];
                                 let tile = TileId::from_u8(tile_id).unwrap();
-                                hwvideo.put_screen_tile(Point::new(x,y), tile);
+                                hwvideo.put_screen_tile(Point::new(x as i32,y as i32), tile);
                             }
                         }
 
@@ -208,8 +209,11 @@ impl GameTask {
 
                     },
                     // 5 src:268b
-                    TaskCoreE::ResetGhostHomeCounter => {
-// TODO
+                    TaskCoreE::ResetGhostHomeCounter(b) => {
+                        playing.counter_related_to_ghost_movement_inside_home = 0b0101_0101;
+                        if b != true {
+                            playing.ghost_substate_if_alive[SpriteName::Red as usize] = GhostSubState::GoingForMan;
+                        }
                     },
                     // 6 src:240d
                     TaskCoreE::ClearColorRam => {
@@ -256,7 +260,27 @@ impl GameTask {
                     },
                     // 16 src:070e
                     TaskCoreE::SetupDifficulty => {
-// TODO
+                        let difficulty = playing.state_player[playing.current_player].p_difficulty_settings[0];
+                        let ghost_speed_and_orientation = GHOST_DIFFICULTY[difficulty].speed_and_orientation;
+                        ghost_speed_and_orientation.copy_difficulty_movement_bit_pattern(playing);
+
+                        let out_counter = GHOST_DIFFICULTY[difficulty].out_counter;
+                        // src:083a
+                        playing.pink_ghost_counter_to_go_out_of_home_limit = out_counter[0];
+                        playing.blue_ghost_counter_to_go_out_of_home_limit = out_counter[1];
+                        playing.orange_ghost_counter_to_go_out_of_home_limit = out_counter[2];
+
+                        let pill_counter = GHOST_DIFFICULTY[difficulty].pill_counter;
+                        playing.red_ghost_remainder_of_pills_when_first_difficulty_flag_is_set = pill_counter[0];
+                        playing.red_ghost_remainder_of_pills_when_second_difficulty_flag_is_set = pill_counter[1];
+
+                        let blue_time =  GHOST_DIFFICULTY[difficulty].blue_time;
+                        playing.time_the_ghosts_stay_blue_when_pacman_eats_a_big_pill = *blue_time;
+
+                        let leaves_home_time = GHOST_DIFFICULTY[difficulty].leaves_home_time;
+                        playing.number_of_units_before_ghost_leaves_home = *leaves_home_time;
+
+                        return self.draw_fruits_bottom_right_screen(hwvideo, playing, *main_state);
                     },
                     // 17 src:26a2
                     TaskCoreE::ClearFullDataGame => {
@@ -270,8 +294,18 @@ impl GameTask {
                         playing.clears_all_pills();
                     }
                     // 19 src:2a35
-                    TaskCoreE::ClearsSprites => {
-// TODO
+                    TaskCoreE::ClearPills => {
+                        for y in 2..=33 {
+                            for x in 0..WIDTH {
+                                let p = Point::new(x as i32,y as i32);
+                                let tile = hwvideo.get_screen(p).0;
+                                match tile {
+                                    TileId::Pill1 | TileId::Pill3 | TileId::Pill5 => hwvideo.put_screen_tile(p, TileId::Space),
+                                    _ => {},
+                                }
+                            }
+
+                        }
                     },
                     // 20 src:26d0 (void)
                     TaskCoreE::SetupConfigFromDipSwitches => {

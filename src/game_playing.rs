@@ -18,6 +18,7 @@ use crate::mspacmab_data_maze::{ MAZE, PELLET_TO_EAT, POWER_PILL };
 use crate::palette::ColorE;
 use crate::sprite::SpriteId;
 use crate::state_player::StatePlayer;
+use crate::ghost_difficulty::{ GhostDifficulty, ManSpeedBitPatterns, GhostSpeedBitPatterns };
 
 enum ManSpeedBitPattern {
     NormalPillState = 0,
@@ -125,7 +126,8 @@ pub struct GamePlaying {
     ghost_best_orientation_found: Direction,
     // src:4d3c
     wanted_man_orientation: Direction,
-
+    // src:4d3d
+    opposite_orientation: Direction,
     // src:4d3e
     ghost_current_tile_position: Point,
     // src:4d40
@@ -137,23 +139,32 @@ pub struct GamePlaying {
 
     // src:4d46
     // movement bit patterns (difficulty dependant)
-    man_state: [u32; 4],
+    pub man_movement: ManSpeedBitPatterns,
     // src:4d56
-    red_ghost_state: [u32; 3],
+    pub red_ghost_movement: GhostSpeedBitPatterns,
     // src:4d62
-    pink_ghost_state: [u32; 3],
+    pub pink_ghost_movement: GhostSpeedBitPatterns,
     // src:4d6e
-    blue_ghost_state: [u32; 3],
+    pub blue_ghost_movement: GhostSpeedBitPatterns,
     // src:4d7a
-    orange_ghost_state: [u32; 3],
+    pub orange_ghost_movement: GhostSpeedBitPatterns,
+
+    /*
+        Difficulty related table. Each entry is 2 bytes, and
+        contains a counter value.  when the counter at 4DC2
+        reaches each entry value, the ghosts changes their
+        orientation and 4DC1 increments it's value to point to
+        the next entry
+    */
     // src:4d86
-    difficulty_related_table: [u16; 7],
+    pub ghost_counter_for_orientation_change: [u16; 7],
     // src:4d94
-    counter_related_to_ghost_movement_inside_home: u8,
+    pub counter_related_to_ghost_movement_inside_home: u8,
     // src:4d95
-    number_of_units_before_ghost_leaves_home: u16,
+    pub number_of_units_before_ghost_leaves_home: u16,
     // src:4d97
     inactivity_counter_for_units_of_the_above: u16,
+
     /* These values are normally 0, but are changed to 1 when a ghost has entered a tunnel slowdown area */
     // src:4d99
     delay_ghost_movement: [u8; 4],
@@ -163,7 +174,7 @@ pub struct GamePlaying {
 
     /******************************************** ghost substates if alive **/
     // src:4da0, src:4da1, src:4da2, src:4da3
-    ghost_substate_if_alive: [GhostSubState; 4],
+    pub ghost_substate_if_alive: [GhostSubState; 4],
 
     // src:4da4
     pub number_of_ghost_killed_but_no_collision_for_yet: KillingGhostState,
@@ -185,6 +196,63 @@ pub struct GamePlaying {
     // src:4db1
     change_orientation_flag: [bool; 5],
 
+    /*
+        DIFFICULTY SETTINGS
+
+        0: red ghost goes to upper right corner on scatter
+        1: red ghost goes for pacman on scatter
+        1: red ghost goes faster
+        1 if 224 dots have been eaten and all 4 ghosts are free
+    */
+    // src:4db6
+    red_ghost_first_difficulty_flag: bool,
+
+    /*
+        when set, red uses a faster bit speed pattern
+        0: not set
+        1: faster movement
+    */
+    // src:4db7
+    red_ghost_second_difficulty_flag: bool,
+
+    // src:4db8
+    pub pink_ghost_counter_to_go_out_of_home_limit: u8,
+    // src:4db9
+    pub blue_ghost_counter_to_go_out_of_home_limit: u8,
+    // src:4dba
+    pub orange_ghost_counter_to_go_out_of_home_limit: u8,
+    // src:4dbb
+    pub red_ghost_remainder_of_pills_when_first_difficulty_flag_is_set: u8,
+    // src:4dbc
+    pub red_ghost_remainder_of_pills_when_second_difficulty_flag_is_set: u8,
+    // src:4dbd
+    pub time_the_ghosts_stay_blue_when_pacman_eats_a_big_pill: u16,
+    // src:4dbf
+    pacman_about_to_enter_a_tunnel: bool,
+
+    /* COUNTERS */
+    
+    // used for ghost animations
+    // src:4dc0
+    counter__change_every_8_frames: u8,
+
+    /*
+        [0..7]. See ghost_counter_for_orientation_change
+        0: random ghost movement, 1: normal movement (?)
+
+        ghost reversal status (altered by timer at $4DC2/3
+    */
+    // src:4dc1
+    counter__orientation_changes_index: u8,
+
+    // chase frames since board/pac start (paused during powerpill)
+    // src:4dc2
+    counter__related_to_ghost_orientation_changes: u16,
+
+    // counter 0..8 to handle things once every 8 times
+    // src:4dc4
+    counter__to_handle_things_once_every_8_times: u8,
+
     // src:4dc5
     man_dead_animation_counter: u16,
 
@@ -200,6 +268,8 @@ pub struct GamePlaying {
     // src:4dcd
     // unused
 
+    // src:4dce
+    // see credits.rs
 
     // src:4dcf
     counter_to_handle_power_pill_flashes: u8,
@@ -212,7 +282,7 @@ pub struct GamePlaying {
     pub killed_ghost_animation_state: i8,
 
     // src:4dd2 
-    // (see sprites_coord_xy)
+    // see sprites_coord_xy
 
     // src:4dd4
     pub fruit_points: i8,
@@ -234,7 +304,7 @@ pub struct GamePlaying {
     // src:4e72
     pub cocktail: bool,
     // src:4e73
-    pub is_hard_game: bool,
+    pub p_ghost_difficulty: &'static [usize; 21],
 
 }
 
@@ -353,17 +423,18 @@ impl GamePlaying {
             sprites_current_tile_xy: [Point::new(0,0); 6],
             ghost_best_orientation_found: Direction::Right,
             wanted_man_orientation: Direction::Right,
+            opposite_orientation: Direction::Left,  // HACK: manual add for new()
 
             ghost_current_tile_position: Point::new(0,0),
             ghost_destination_tile_position: Point::new(0,0),
             ghost_temp_resulting_position: Point::new(0,0),
             minimum_distance_square_found: Point::new(0,0),
-            man_state: [0; 4],
-            red_ghost_state: [0; 3],
-            pink_ghost_state: [0; 3],
-            blue_ghost_state: [0; 3],
-            orange_ghost_state: [0; 3],
-            difficulty_related_table: [0; 7],
+            man_movement: ManSpeedBitPatterns::new(0),
+            red_ghost_movement: GhostSpeedBitPatterns::new(0),
+            pink_ghost_movement: GhostSpeedBitPatterns::new(0),
+            blue_ghost_movement: GhostSpeedBitPatterns::new(0),
+            orange_ghost_movement: GhostSpeedBitPatterns::new(0),
+            ghost_counter_for_orientation_change: [0; 7],
             counter_related_to_ghost_movement_inside_home: 0,
             number_of_units_before_ghost_leaves_home: 0,
             inactivity_counter_for_units_of_the_above: 0,
@@ -378,6 +449,22 @@ impl GamePlaying {
             killing_ghost_state: KillingGhostState::Nothing,
             ghost_state: [GhostState::Alive; 4],
             change_orientation_flag: [false; 5],
+
+
+            red_ghost_first_difficulty_flag: false, // HACK: manual add for new()
+            red_ghost_second_difficulty_flag: false,    // HACK: manual add for new()
+            pink_ghost_counter_to_go_out_of_home_limit: 0,  // HACK: manual add for new()
+            blue_ghost_counter_to_go_out_of_home_limit: 0,  // HACK: manual add for new()
+            orange_ghost_counter_to_go_out_of_home_limit: 0,    // HACK: manual add for new()
+            red_ghost_remainder_of_pills_when_first_difficulty_flag_is_set: 0,  // HACK: manual add for new()
+            red_ghost_remainder_of_pills_when_second_difficulty_flag_is_set: 0, // HACK: manual add for new()
+            time_the_ghosts_stay_blue_when_pacman_eats_a_big_pill: 0,   // HACK: manual add for new()
+            pacman_about_to_enter_a_tunnel: false,  // HACK: manual add for new()
+            counter__change_every_8_frames: 0,  // HACK: manual add for new()
+            counter__orientation_changes_index: 0,  // HACK: manual add for new()
+            counter__related_to_ghost_orientation_changes: 0,   // HACK: manual add for new()
+            counter__to_handle_things_once_every_8_times: 0,    // HACK: manual add for new()
+
             man_dead_animation_counter: 0,
             
             current_orientation_we_are_trying: Direction::Right,
@@ -394,10 +481,10 @@ impl GamePlaying {
             subroutine_playing_state: 0,
 
             current_player: 0,
-            state_player: [StatePlayer::new(false); 2],
+            state_player: [StatePlayer::new(GhostDifficulty::get_difficulty_settings(false)); 2],
 
             cocktail: false,
-            is_hard_game: false,
+            p_ghost_difficulty: GhostDifficulty::get_difficulty_settings(false),
         }
     }
 
@@ -411,12 +498,12 @@ impl GamePlaying {
                                     hwoutput: &mut HardwareOutput,
                                     main_state: &MainStateE, 
                                     subroutine_attract_state: u8) {
-        // println!("MY CURRENT_HUMAN_REVERSE_POINTER / PC :)");
-        // PC
         println!("playing_state={}", self.subroutine_playing_state);
         match self.subroutine_playing_state {
              0 => self.p00_reset_game_data(), // set up game initialization
-             1 => self.p01_init_screen_then_goto_p09(timed_task, tasks, hwoutput, main_state), // set up tasks for beginning of game
+             1 => self.p01_init_screen_or_p09(timed_task, tasks, hwoutput, main_state), // set up tasks for beginning of game
+// println!("MY CURRENT_HUMAN_REVERSE_POINTER / PC :)");
+// PC
              3 => self.p03_check_rack_test(timed_task, tasks, hwvideo, hwsound, hwinput, subroutine_attract_state), // demo mode or player is playing
              4 => self.p04_player_is_died_game_over(), // when player has collided with hostile ghost (died)
              6 => self.p06_switch_player(), // check for game over, do things if true
@@ -444,12 +531,12 @@ impl GamePlaying {
     // src:0879
     /* main routine #3.  arrive here at the start of the game when a new game is started */
     fn p00_reset_game_data(&mut self) {
-        self.state_player = [StatePlayer::new(self.is_hard_game); 2];
+        self.state_player = [StatePlayer::new(self.p_ghost_difficulty); 2];
         self.subroutine_playing_state += 1;
     }
 
     // src:0899
-    fn p01_init_screen_then_goto_p09(&mut self,
+    fn p01_init_screen_or_p09(&mut self,
                             timed_task: &mut GameTaskTimed,
                             tasks: &mut GameTask,
                             hwoutput: &mut HardwareOutput,
@@ -460,7 +547,7 @@ impl GamePlaying {
             tasks.add(TaskCoreE::ClearFullDataGame);
             tasks.add(TaskCoreE::DrawTextOrGraphics(TextId::PlayerOne,false));
             tasks.add(TaskCoreE::ResetSpritesToDefaultValues(false));
-            tasks.add(TaskCoreE::ResetGhostHomeCounter);
+            tasks.add(TaskCoreE::ResetGhostHomeCounter(false));
             tasks.add(TaskCoreE::SetupDifficulty);
             tasks.add(TaskCoreE::DrawRemainingLivesBottomLeftScreen);
             timed_task.add(CurrentTime::LessTenth, 20, TaskTimedNameE::IncreaseSubroutinePlayingState);
@@ -474,7 +561,7 @@ impl GamePlaying {
     fn p03_check_rack_test(&mut self, timed_task: &mut GameTaskTimed, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, hwinput: &HardwareInput, subroutine_attract_state: u8) {
         if hwinput.rack_test {
             self.subroutine_playing_state = 14;
-            tasks.add(TaskCoreE::ClearsSprites);
+            tasks.add(TaskCoreE::ClearPills);
         } else {
             self.check_if_board_is_cleared(timed_task, tasks, hwvideo, hwsound, subroutine_attract_state);
         }
@@ -564,10 +651,10 @@ impl GamePlaying {
             return;
         }
         self.check_for_ghosts_being_eaten_and_set_ghost_states_accordingly();
-        self.red_ghost_state_update(tasks, hwvideo, hwsound, subroutine_attract_state);
-        self.pink_ghost_state_update(tasks, hwvideo, hwsound, subroutine_attract_state);
-        self.blue_ghost_state_update(tasks, hwvideo, hwsound, subroutine_attract_state);
-        self.orange_ghost_state_update(tasks, hwvideo, hwsound, subroutine_attract_state);
+        self.red_ghost_movement_update(tasks, hwvideo, hwsound, subroutine_attract_state);
+        self.pink_ghost_movement_update(tasks, hwvideo, hwsound, subroutine_attract_state);
+        self.blue_ghost_movement_update(tasks, hwvideo, hwsound, subroutine_attract_state);
+        self.orange_ghost_movement_update(tasks, hwvideo, hwsound, subroutine_attract_state);
         if self.number_of_ghost_killed_but_no_collision_for_yet != KillingGhostState::Nothing {
             self.ghost_bonus_anim_after_eaten(timed_task, hwsound);
         } else {
@@ -615,7 +702,7 @@ impl GamePlaying {
     }
     
     // src:1094
-    fn red_ghost_state_update(&mut self, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, subroutine_attract_state: u8) {
+    fn red_ghost_movement_update(&mut self, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, subroutine_attract_state: u8) {
         match self.ghost_state[SpriteName::Red as usize] {
             GhostState::Dead => {
                 self.handles_ghost_movement(tasks, hwvideo, SpriteName::Red, subroutine_attract_state);
@@ -631,7 +718,7 @@ impl GamePlaying {
         }
     }
     // src:109e
-    fn pink_ghost_state_update(&mut self, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, subroutine_attract_state: u8) {
+    fn pink_ghost_movement_update(&mut self, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, subroutine_attract_state: u8) {
         match self.ghost_state[SpriteName::Pink as usize] {
             GhostState::Dead => {
                 self.handles_ghost_movement(tasks, hwvideo, SpriteName::Pink, subroutine_attract_state);
@@ -647,7 +734,7 @@ impl GamePlaying {
         }
     }
     // src:10a8
-    fn blue_ghost_state_update(&mut self, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, subroutine_attract_state: u8) {
+    fn blue_ghost_movement_update(&mut self, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, subroutine_attract_state: u8) {
         let sni = SpriteName::Blue as usize;
 
         match self.ghost_state[sni] {
@@ -668,7 +755,7 @@ impl GamePlaying {
         }
     }
     // src:10b4
-    fn orange_ghost_state_update(&mut self, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, subroutine_attract_state: u8) {
+    fn orange_ghost_movement_update(&mut self, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, subroutine_attract_state: u8) {
         let sni = SpriteName::Orange as usize;
         match self.ghost_state[sni] {
             GhostState::Dead => {
@@ -941,7 +1028,7 @@ impl GamePlaying {
         let red_collision:bool = self.ghost_state[SpriteName::Red as usize] == GhostState::Alive && ((self.sprites_current_tile_xy[SpriteName::Blue as usize].x - man_p.x) <= 4) && ((self.sprites_current_tile_xy[SpriteName::Red as usize].y - man_p.y) <= 4);
         self.check_for_collision(tasks, hwsound, red_collision, pink_collision, blue_collision, orange_collision);
     }
-    // src:1806
+    // src:1806 TODO
     fn handles_pacman_movement(&mut self) {
 
         /* delay man movement */
@@ -953,10 +1040,10 @@ impl GamePlaying {
         /* movement when power pill is active or not */
         if self.power_pill_effect {
             // movement when power pill active
-            self.man_state[ManSpeedBitPattern::BigPillState as usize] *= 2;
+            self.man_movement.big_pill_state *= 2;
         } else {
             // movement when power pill not active
-            self.man_state[ManSpeedBitPattern::NormalPillState as usize] *= 2;
+            self.man_movement.normal_state *= 2;
         }
 
         /* all pacman movement */
@@ -1119,7 +1206,7 @@ impl GamePlaying {
             0 | 1 => {
                 // slow down for maze on level 1 and 2 :
                 // src: 8b3d
-                let tunnel_slow_down_1_2 = [
+                const tunnel_slow_down_1_2:[(u8,u8); 16] = [
                     ( 0,11), ( 1,11), ( 2,11),  // upper left
                     (24,11), (25,11), (26,11),  // upper right
                     ( 0,20), ( 1,20), ( 2,20),  // lower left

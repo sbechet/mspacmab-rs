@@ -12,6 +12,7 @@ use crate::hardware::{ HardwareInput, HardwareOutput, Coinage, Bonus };
 use crate::palette::{ColorE};
 use crate::text::{ TextId, Text };
 use crate::tile::TileId;
+use crate::ghost_difficulty::GhostDifficulty;
 
 pub struct Credits {
     // src:4dce
@@ -328,7 +329,7 @@ impl Credits {
         self.ghost_names_mode = hwinput.change_ghost_names;
 
         /* check dip switch 6 for difficulty */
-        playing.is_hard_game = hwinput.hard_game; // RUST HACK: not a ref but a bool here
+        playing.p_ghost_difficulty = GhostDifficulty::get_difficulty_settings(hwinput.hard_game);
 
         /* check bit 7 on IN1 for upright / cocktail */
         playing.cocktail = hwinput.cocktail_cabinet;

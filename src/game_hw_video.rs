@@ -107,7 +107,7 @@ impl GameHwVideo {
             },
             // src:2400
             ScreenPart::Maze => {
-                for x in 0..=27 {
+                for x in 0..WIDTH {
                     for y in 2..=33 {
                         self.put_screen_tile(Point::new(x as i32,y as i32), TileId::Space);
                     }

@@ -1,9 +1,11 @@
 use crate::tile::TileId;
 
+use crate::ghost_difficulty::GhostDifficulty;
+
 #[derive(Copy, Clone)]
 pub struct StatePlayer {
     // src:4e0a, src:4e38
-    pub p_difficulty_settings: &'static [u8],
+    pub p_difficulty_settings: &'static [usize; 21],
     // src:4e0c, src:4e3a
     pub first_fruit_flag: bool,
     // src:4e0d, src:4e3b
@@ -31,9 +33,11 @@ pub struct StatePlayer {
 }
 
 impl StatePlayer {
-    pub fn new(hard_game: bool) -> Self {
+    // src:26d0
+    pub fn new(ghost_difficulty: &'static [usize; 21]) -> Self {
         StatePlayer {
-            p_difficulty_settings: Self::get_difficulty_settings(hard_game),
+            // src:272c
+            p_difficulty_settings: ghost_difficulty,
             first_fruit_flag: false,
             second_fruit_flag: false,
             dots_eaten: 0,
@@ -49,14 +53,5 @@ impl StatePlayer {
         }
     }
 
-    fn get_difficulty_settings(hard: bool) -> &'static [u8] {
-        if hard {
-            // hard (RUST HACK: last 5 '20' never used, but for static rust array len compatibility)
-            &[  1,  3,4,  6,7,8,9,10,11,12,13,14,15,16,17,      20, 20,20,20,20,20]
-        } else {
-            // normal
-            &[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
-        }
-    }
-
+ 
 }
