@@ -73,6 +73,7 @@ pub enum ColorE {
     Yellow=9,
     LightBrown2=14,
     ColorFruit=15,
+    GhostFrozen=17,
     ColorGreyRed=18,
     ColorMazeLevel6_7_8_9=20,
     Brown=21,

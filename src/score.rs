@@ -26,7 +26,7 @@ impl Score {
     }
 
     // src:2a5a
-    pub fn t19_update_score_then_draw(&mut self, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, playing: &mut GamePlaying, credits: &mut Credits, main_state: MainStateE, score_index: usize) {
+    pub fn t19_update_score_then_draw(&mut self, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, playing: &mut GamePlaying, credits: &mut Credits, main_state: MainStateE, score_index: i8) {
         // src:2b17
         const SCORE_TABLE:[u16; 14] = [
             10,   // dot             =   10  0

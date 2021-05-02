@@ -49,13 +49,13 @@ pub enum TaskCoreE {
     SetupDifficulty,                        // 16 src:070e
     ClearFullDataGame,                      // 17 src:26a2
     ClearsPillsAndPowerPills,               // 18 src:24c9
-    ClearPills,                          // 19 src:2a35
+    ClearPills,                             // 19 src:2a35
     SetupConfigFromDipSwitches,             // 20 src:26d0 (void)
     UpdateScreenPillConfigToVideoRam,       // 21 src:2487
     IncreaseMainSubroutineNumber,           // 22 src:23e8
     PacmanAiMovementWhenAttract,            // 23 src:28e3
     ResetThenPrintPlayersScore,             // 24 src:2ae0 (void)
-    UpdateScoreThenDraw(usize),             // 25 src:2a5a (score_index)
+    UpdateScoreThenDraw(i8),                // 25 src:2a5a (score_index)
     DrawRemainingLivesBottomLeftScreen,     // 26 src:2b6a
     DrawFruitsBottomRightScreen,            // 27 src:2bea
     DrawTextOrGraphics(TextId, bool),       // 28 src:95e3 (TextId textid, bool clear)

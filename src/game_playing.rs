@@ -2,7 +2,7 @@ use embedded_graphics::geometry::Point;
 use num_traits::FromPrimitive;
 
 
-use crate::hardware::{ HardwareInput, HardwareOutput };
+use crate::hardware::{ HardwareInput, HardwareOutput, Joystick };
 use crate::game_hw_video::{ GameHwVideo, SpriteElement };
 use crate::game_hw_sound::{ SoundChannels, Wave };
 
@@ -36,7 +36,7 @@ pub enum KillingGhostState {
     KillOrange=4,
 }
 
-#[derive(Copy, Clone)]
+#[derive(PartialEq, Copy, Clone)]
 pub enum Direction {
     Right=0,
     Down=1,
@@ -93,7 +93,7 @@ pub struct GamePlaying {
     // src:4d0a (next tile?)
     sprites_coord_middle_of_tile: [Point; 6],
     // src:4d14
-    sprites_move_xy_direction: [Point; 6],
+    sprites_move_xy_direction: [Point; 6],  // (-1/0/1, -1/0,1)
     // src:4d1e
     sprites_face_xy_direction: [Point; 6],
     // src:4d28
@@ -113,10 +113,11 @@ pub struct GamePlaying {
     (  8, 148) <=> ( 31, 50)
     (128, 196) <=> ( 46, 56)
 
-    0x1d == wraparound -> 0x3d
-    0x3e == wraparound -> 0x1e.
-    x : 0x1e..0x3d 30..61 (d=31) left-right = decrease <-> 3d=left=0, 1e=right ?
-    y : 0x22..0x3e 34..62 (d=28) bottom-top = decrease <-> 3e=top=0, 22=bottom
+    five bits to encode array
+    0x1d=29=0b00_0_11101 == wraparound -> 0x3d=61=0b00_1_11101
+    0x3e=62=0b00_1_11110 == wraparound -> 0x1e=30=0b00_0_11110
+    x : 0x22..0x3e 34..62 (d=28) left-right = decrease <-> 3e=right=0, 22=left
+    y : 0x1e..0x3d 30..61 (d=31) bottom-top = decrease <-> 3d=bottom=0, 1e=top ?
     */
     sprites_current_tile_xy: [Point; 6],
 
@@ -171,6 +172,12 @@ pub struct GamePlaying {
     // src:4d9d
     // eating pills : 1, eating big pills: 6, else -1
     delay_man_movement: i8,
+
+    // src:4d9e
+    current_dots_eaten: u8,
+
+    // src:4d9f
+    eaten_pills_counter_after_pacman_has_died_in_a_level: u8,
 
     /******************************************** ghost substates if alive **/
     // src:4da0, src:4da1, src:4da2, src:4da3
@@ -227,8 +234,6 @@ pub struct GamePlaying {
     pub red_ghost_remainder_of_pills_when_second_difficulty_flag_is_set: u8,
     // src:4dbd
     pub time_the_ghosts_stay_blue_when_pacman_eats_a_big_pill: u16,
-    // src:4dbf
-    pacman_about_to_enter_a_tunnel: bool,
 
     /* COUNTERS */
     
@@ -276,7 +281,7 @@ pub struct GamePlaying {
 
     // src:4dd0
     // how many ghosts eaten this powerpill? 0..4?
-    counter_current_number_of_killed_ghosts: usize,
+    counter_current_number_of_killed_ghosts: i8,
 
     // src:4dd1 FRUITP  fruit position
     pub killed_ghost_animation_state: i8,
@@ -441,6 +446,8 @@ impl GamePlaying {
             delay_ghost_movement: [0; 4],
 
             delay_man_movement: 0,  // TODO: can be directly -1?
+            current_dots_eaten: 0,
+            eaten_pills_counter_after_pacman_has_died_in_a_level: 0,
             ghost_substate_if_alive: [GhostSubState::AtHome; 4],
             number_of_ghost_killed_but_no_collision_for_yet: KillingGhostState::Nothing,
             man_dead_animation_state: 0,
@@ -459,7 +466,6 @@ impl GamePlaying {
             red_ghost_remainder_of_pills_when_first_difficulty_flag_is_set: 0,  // HACK: manual add for new()
             red_ghost_remainder_of_pills_when_second_difficulty_flag_is_set: 0, // HACK: manual add for new()
             time_the_ghosts_stay_blue_when_pacman_eats_a_big_pill: 0,   // HACK: manual add for new()
-            pacman_about_to_enter_a_tunnel: false,  // HACK: manual add for new()
             counter__change_every_8_frames: 0,  // HACK: manual add for new()
             counter__orientation_changes_index: 0,  // HACK: manual add for new()
             counter__related_to_ghost_orientation_changes: 0,   // HACK: manual add for new()
@@ -504,7 +510,7 @@ impl GamePlaying {
              1 => self.p01_init_screen_or_p09(timed_task, tasks, hwoutput, main_state), // set up tasks for beginning of game
 // println!("MY CURRENT_HUMAN_REVERSE_POINTER / PC :)");
 // PC
-             3 => self.p03_check_rack_test(timed_task, tasks, hwvideo, hwsound, hwinput, subroutine_attract_state), // demo mode or player is playing
+             3 => self.p03_check_rack_test(timed_task, tasks, hwvideo, hwsound, hwinput, main_state, subroutine_attract_state), // demo mode or player is playing
              4 => self.p04_player_is_died_game_over(), // when player has collided with hostile ghost (died)
              6 => self.p06_switch_player(), // check for game over, do things if true
              8 => self.p08_end_of_demo(), // end of demo mode when ms pac dies in demo.  clears a bunch of memories.
@@ -558,12 +564,12 @@ impl GamePlaying {
     }
 
     // src:08cd
-    fn p03_check_rack_test(&mut self, timed_task: &mut GameTaskTimed, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, hwinput: &HardwareInput, subroutine_attract_state: u8) {
+    fn p03_check_rack_test(&mut self, timed_task: &mut GameTaskTimed, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, hwinput: &HardwareInput, main_state: &MainStateE, subroutine_attract_state: u8) {
         if hwinput.rack_test {
             self.subroutine_playing_state = 14;
             tasks.add(TaskCoreE::ClearPills);
         } else {
-            self.check_if_board_is_cleared(timed_task, tasks, hwvideo, hwsound, subroutine_attract_state);
+            self.check_if_board_is_cleared(timed_task, tasks, hwvideo, hwsound, hwinput, main_state, subroutine_attract_state);
         }
     }
 
@@ -624,13 +630,13 @@ impl GamePlaying {
 
     // src:94a1
     // routine to determine the number of pellets which must be eaten
-    fn check_if_board_is_cleared(&mut self, timed_task: &mut GameTaskTimed, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, subroutine_attract_state: u8) {
+    fn check_if_board_is_cleared(&mut self, timed_task: &mut GameTaskTimed, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, hwinput: &HardwareInput, main_state: &MainStateE, subroutine_attract_state: u8) {
         let pellet_to_eat = self.get_data_from_current_level(&PELLET_TO_EAT);
         if self.state_player[self.current_player].dots_eaten == *pellet_to_eat {
             self.subroutine_playing_state = 12;
         } else {
             // src:08eb
-            self.update_ghost_and_pacman_state(timed_task, tasks, hwvideo, hwsound, subroutine_attract_state);
+            self.update_ghost_and_pacman_state(timed_task, tasks, hwvideo, hwsound, hwinput, main_state, subroutine_attract_state);
             // self.update_ghost_and_pacman_state();
             // self.is_time_to_leave_house();
             // self.adjust_ghost_movement(param_1);
@@ -645,7 +651,7 @@ impl GamePlaying {
     }
 
     // src:1017
-    fn update_ghost_and_pacman_state(&mut self, timed_task: &mut GameTaskTimed, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, subroutine_attract_state: u8) {
+    fn update_ghost_and_pacman_state(&mut self, timed_task: &mut GameTaskTimed, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, hwinput: &HardwareInput, main_state: &MainStateE, subroutine_attract_state: u8) {
         self.man_dead_animation(hwsound);
         if self.man_dead_animation_state != 0 {
             return;
@@ -661,8 +667,8 @@ impl GamePlaying {
             self.check_for_collision_with_regular_ghost(tasks, hwsound);
             self.check_for_collision_with_blue_ghost(tasks, hwsound);
             if self.number_of_ghost_killed_but_no_collision_for_yet == KillingGhostState::Nothing {
-                self.handles_pacman_movement();
-            //     control_movement_red_ghost();
+                self.handles_man_movement(timed_task, tasks, hwinput, hwvideo, hwsound, main_state);
+                self.control_movement_red_ghost(timed_task, tasks, hwinput, hwvideo, hwsound);
             //     control_movement_pink_ghost();
             //     control_movement_blue_ghost();
             //     control_movement_orange_ghost();
@@ -1028,27 +1034,245 @@ impl GamePlaying {
         let red_collision:bool = self.ghost_state[SpriteName::Red as usize] == GhostState::Alive && ((self.sprites_current_tile_xy[SpriteName::Blue as usize].x - man_p.x) <= 4) && ((self.sprites_current_tile_xy[SpriteName::Red as usize].y - man_p.y) <= 4);
         self.check_for_collision(tasks, hwsound, red_collision, pink_collision, blue_collision, orange_collision);
     }
-    // src:1806 TODO
-    fn handles_pacman_movement(&mut self) {
+    // src:1806
+    fn handles_man_movement(&mut self, timed_task: &mut GameTaskTimed, tasks: &mut GameTask, hwinput: &HardwareInput, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels, main_state: &MainStateE) {
+        let man = SpriteName::Man as usize;
 
-        /* delay man movement */
+        // delay man movement
         if self.delay_man_movement != -1 {
             self.delay_man_movement -= 1;
             return;
         }
 
-        /* movement when power pill is active or not */
-        if self.power_pill_effect {
-            // movement when power pill active
-            self.man_movement.big_pill_state *= 2;
+        // movement when power pill is active or not
+        let man_movement: &mut u32 = if self.power_pill_effect {
+            &mut self.man_movement.big_pill_state
         } else {
-            // movement when power pill not active
-            self.man_movement.normal_state *= 2;
+            &mut self.man_movement.normal_state
+        };
+        let current_movement = *man_movement >> 31;
+        *man_movement = *man_movement << 1 | current_movement; // rotation
+        if current_movement == 0 {
+            return;
         }
 
-        /* all pacman movement */
+        // pacman movements
 
-        // TODO
+        self.current_dots_eaten = self.state_player[self.current_player].dots_eaten;
+
+        let joystick = if self.current_player == 0 && ! self.cocktail {
+            &hwinput.joystick1
+        } else {
+            &hwinput.joystick2
+        };
+
+        let is_in_demo_mode = *main_state == MainStateE::Attract || self.subroutine_playing_state > 15;
+        let man_is_in_tunnel = self.sprites_current_tile_xy[man].x < 33 || self.sprites_current_tile_xy[man].x >= 59;
+
+        if is_in_demo_mode {
+            // TODO: check again, not sure
+            if (self.sprites_move_xy_direction[man].y == 0 && self.sprites_coord_xy[man].x & 7 == 4) || self.sprites_coord_xy[man].y & 7 == 4
+            {
+                if self.is_sprite_using_tunnel(SpriteName::Man) {
+                    tasks.add(TaskCoreE::PacmanAiMovementWhenAttract);
+                }
+                self.sprites_coord_middle_of_tile[man] += self.sprites_face_xy_direction[man];
+                self.sprites_move_xy_direction[man] = self.sprites_face_xy_direction[man];
+                self.man_orientation = self.wanted_man_orientation;
+            }
+            self.sprites_coord_xy[man] += self.sprites_move_xy_direction[man];
+        } else {
+            if man_is_in_tunnel {
+                // ***************** TUNNEL_CODE
+                // this handles tunnel movement
+                if joystick.left {
+                    self.man_orientation = Direction::Left;
+                    self.sprites_move_xy_direction[man] = Point::new(1, 0);
+                } else if joystick.right {
+                    self.man_orientation = Direction::Right;
+                    self.sprites_move_xy_direction[man] = Point::new(-1, 0);
+                }
+            } else {
+                // ***************** NORMAL_CODE
+                // this handles normal (not tunnel) movement
+                let no_orientation_change = if joystick.left {
+                    self.man_orientation = Direction::Left;
+                    self.sprites_move_xy_direction[man] = Point::new(1, 0);
+                    false
+                } else if joystick.right {
+                    self.man_orientation = Direction::Right;
+                    self.sprites_move_xy_direction[man] = Point::new(-1, 0);
+                    false
+                } else if joystick.up {
+                    self.man_orientation = Direction::Up;
+                    self.sprites_move_xy_direction[man] = Point::new(0, -1);
+                    false
+                } else if joystick.down {
+                    self.man_orientation = Direction::Down;
+                    self.sprites_move_xy_direction[man] = Point::new(0, 1);
+                    false
+                } else {
+                    self.sprites_face_xy_direction[man] = self.sprites_move_xy_direction[man];
+                    true
+                };
+
+                let tile = hwvideo.get_screen(self.sprites_current_tile_xy[man] + self.sprites_face_xy_direction[man]).0;
+                // is it a tile maze?
+                if (tile as u8) & 0xc0 == 0xc0 {
+                    let orientation_change = ! no_orientation_change;
+                    if orientation_change {
+                        // orientation change
+                        let tile = hwvideo.get_screen(self.sprites_current_tile_xy[man] + self.sprites_move_xy_direction[man]).0;
+                        // is it a tile maze?
+                        if (tile as u8) & 0xc0 == 0xc0 {
+                            /* 
+                             * TODO: check again not sure about this part!?
+                             * code seems to be why pacman turns corners fast.
+                             * it gives an extra boost to the new direction
+                             */
+                            if self.man_orientation == Direction::Up || self.man_orientation == Direction::Down {
+                                if self.sprites_coord_xy[man].x & 7 == 4 {
+                                    return
+                                }
+                            } else  if self.sprites_coord_xy[man].y & 7 == 4 {
+                                return
+                            }
+                        }
+                    }
+                }
+            }
+            // ********************* LAB_ram_1950: TUNNEL CODE AND NORMAL CODE
+            self.sprites_coord_xy[man] += self.sprites_move_xy_direction[man];
+            let x = self.sprites_coord_xy[man].x & 0b0111;
+            let y = self.sprites_coord_xy[man].y & 0b0111;
+            if self.man_orientation == Direction::Up || self.man_orientation == Direction::Down {
+                // handle up/down movement turns
+                if y != 4 {
+                    if y < 4 {
+                        // arrive here when cornering up from the right side or when cornering down from the right side
+                        self.sprites_coord_xy[man].y += 1;
+                    } else {
+                        // cornering up from the left side, or down from the left side
+                        self.sprites_coord_xy[man].y -= 1;
+                    }
+                }
+            } else {
+                // handle left/right movement turns
+                if x != 4 {
+                    if x < 4 {
+                        // cornering right from down , cornering left from down
+                        self.sprites_coord_xy[man].x += 1;
+                    } else {
+                        // cornering up to the left or up to the right
+                        self.sprites_coord_xy[man].x -= 1;
+                    }
+                }
+            }
+        }
+        // ************************* LAB_ram_1985:
+        self.sprites_current_tile_xy[man] = Self::convert_sprite_position_to_tile_position(self.sprites_coord_xy[man]);
+        if ! man_is_in_tunnel {
+            // check for fruit being eaten ...
+            let no_fruit = Point::new(0,0);
+            let fruit = SpriteName::Fruit as usize;
+            let man_minus_fruit = self.sprites_coord_xy[man] - self.sprites_coord_xy[fruit] + Point::new(3,3);
+            let is_fruit = self.sprites_coord_xy[fruit] != no_fruit;
+            if is_fruit && self.fruit_points != 0 && man_minus_fruit.x < 6 && man_minus_fruit.y < 6 {
+                // a fruit is being eaten
+                self.sprite[fruit].c = ColorE::Red;
+                self.sprite[fruit].s = self.sprite[fruit].s.flip_xy();
+                tasks.add(TaskCoreE::UpdateScoreThenDraw(self.fruit_points));
+                self.fruit_points = 0;
+                timed_task.add(CurrentTime::LessTenth, 20, TaskTimedNameE::ClearFruitPosition);
+                hwsound.effect[2].num |= 4;            
+            }
+
+
+            self.delay_man_movement = -1;
+            let man_coord = self.sprites_current_tile_xy[man];
+            let tile = hwvideo.get_screen(man_coord).0;
+            if tile == TileId::Pill1 || tile == TileId::Pill5 {
+                // a dot or energizer has been eaten
+                self.state_player[self.current_player].dots_eaten += 1;
+
+                // /*
+                //  * original method: tile as u8 & 15 >> 1 then >> 1
+                //  * pill :val:&15:>>1:>>1
+                //  * pill1: 16:  0:  0:  0
+                //  * pill2: 17:  1:  0:  0
+                //  * pill3: 18:  2:  1:  0
+                //  * pill4: 19:  3:  1:  0
+                //  * pill5: 20:  4:  2:  1
+                //  * 
+                //  */
+                let (eating_delay, score_index) = match tile {
+                    TileId::Pill1 => (1, 0),
+                    TileId::Pill5 => (6, 1),
+                    _ => (0,0),
+                };
+                hwvideo.put_screen_tile(man_coord, TileId::Space);
+                tasks.add(TaskCoreE::UpdateScoreThenDraw(score_index));
+                self.delay_man_movement = eating_delay;
+                self.update_timers_for_ghosts_to_leave_ghost_house();
+                self.check_pacman_eat_big_pill(hwsound);
+                if self.state_player[self.current_player].dots_eaten & 1 == 0 {
+                    hwsound.effect[2].num &= 0b1111_1101;
+                    hwsound.effect[2].num |= 0b0000_0001;
+                } else {
+                    hwsound.effect[2].num &= 0b1111_1110;
+                    hwsound.effect[2].num |= 0b0000_0010;
+                }
+            }
+        }
+    }
+
+    // src:1a6a - TODO
+    fn check_pacman_eat_big_pill(&mut self, hwsound: &mut SoundChannels) {
+        if self.delay_man_movement == 6 {
+            self.sprite[SpriteName::Red as usize].s = SpriteId::GhostFrozen1;
+            self.sprite[SpriteName::Red as usize].c = ColorE::GhostFrozen;
+            self.sprite[SpriteName::Pink as usize].s = SpriteId::GhostFrozen1;
+            self.sprite[SpriteName::Pink as usize].c = ColorE::GhostFrozen;
+            self.sprite[SpriteName::Blue as usize].s = SpriteId::GhostFrozen1;
+            self.sprite[SpriteName::Blue as usize].c = ColorE::GhostFrozen;
+            self.sprite[SpriteName::Orange as usize].s = SpriteId::GhostFrozen1;
+            self.sprite[SpriteName::Orange as usize].c = ColorE::GhostFrozen;
+
+            self.power_pill_effect = true;
+            self.ghost_blue_flag = [true; 4];
+            self.change_orientation_flag = [true; 5];
+
+            self.counter_used_to_change_ghost_colors_under_big_pill_effects = 0;
+            self.counter_while_ghosts_are_blue = self.time_the_ghosts_stay_blue_when_pacman_eats_a_big_pill;
+            self.counter_current_number_of_killed_ghosts = 0;
+            hwsound.effect[1].num &= 0b0111_1111;
+            hwsound.effect[1].num |= 0b0010_0000;
+        }
+    }
+
+    // src:1b08
+    fn update_timers_for_ghosts_to_leave_ghost_house(&mut self) {
+        if self.state_player[self.current_player].dying_in_a_level {
+            self.eaten_pills_counter_after_pacman_has_died_in_a_level += 1;
+            return;
+        }
+        if self.ghost_substate_if_alive[SpriteName::Orange as usize] != GhostSubState::AtHome {
+            return;
+        }
+        if self.ghost_substate_if_alive[SpriteName::Blue as usize] != GhostSubState::AtHome {
+            self.state_player[self.current_player].can_orange_ghost_leave_home = true;
+            return;
+        }
+        if self.ghost_substate_if_alive[SpriteName::Pink as usize] != GhostSubState::AtHome {
+            self.state_player[self.current_player].can_blue_ghost_leave_home = true;
+            return;
+        }
+        self.state_player[self.current_player].can_pink_ghost_leave_home = true;
+    }
+
+    // src:1b36
+    fn control_movement_red_ghost(&mut self, timed_task: &mut GameTaskTimed, tasks: &mut GameTask, hwinput: &HardwareInput, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels) {
+     TODO
     }
 
     // src:1bd8, src:1caf
@@ -1140,6 +1364,12 @@ impl GamePlaying {
 
     // src:2052
     // (x, y) -> screen => no operation...
+
+    // src:205a
+    fn check_ghost_entering_tunnel_slowdown(&mut self) {
+        // see fn is_tunnel_slowdown()
+        TODO
+    }
 
     // src:24c9
     pub fn clears_all_pills(&mut self) {
