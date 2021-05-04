@@ -167,8 +167,9 @@ pub struct GamePlaying {
     inactivity_counter_for_units_of_the_above: u16,
 
     /* These values are normally 0, but are changed to 1 when a ghost has entered a tunnel slowdown area */
+    // TODO: local fn variable?
     // src:4d99
-    delay_ghost_movement: [u8; 4],
+    delay_ghost_movement: [bool; 4],
     // src:4d9d
     // eating pills : 1, eating big pills: 6, else -1
     delay_man_movement: i8,
@@ -299,7 +300,8 @@ pub struct GamePlaying {
 
 
     // src:4e04
-    pub subroutine_playing_state: u8,   // 0x0E = end of level
+    // 0=playing, 2=pause, 3=ghost move, 9=_after init screen, 12=after level complete, 14=end of level
+    pub subroutine_playing_state: u8,
 
     // src:4e09
     pub current_player: usize,
@@ -314,6 +316,13 @@ pub struct GamePlaying {
 }
 
 impl GamePlaying {
+
+    #[inline]
+    pub fn walk(movement: &mut u32) -> bool {
+        let current = *movement >> 31;
+        *movement = *movement << 1 | current; // rotation
+        current == 1
+    }
 
     // src:260f
     pub fn new_is_end(&mut self) {
@@ -443,7 +452,7 @@ impl GamePlaying {
             counter_related_to_ghost_movement_inside_home: 0,
             number_of_units_before_ghost_leaves_home: 0,
             inactivity_counter_for_units_of_the_above: 0,
-            delay_ghost_movement: [0; 4],
+            delay_ghost_movement: [false; 4],
 
             delay_man_movement: 0,  // TODO: can be directly -1?
             current_dots_eaten: 0,
@@ -668,19 +677,18 @@ impl GamePlaying {
             self.check_for_collision_with_blue_ghost(tasks, hwsound);
             if self.number_of_ghost_killed_but_no_collision_for_yet == KillingGhostState::Nothing {
                 self.handles_man_movement(timed_task, tasks, hwinput, hwvideo, hwsound, main_state);
-                self.control_movement_red_ghost(timed_task, tasks, hwinput, hwvideo, hwsound);
-            //     control_movement_pink_ghost();
-            //     control_movement_blue_ghost();
-            //     control_movement_orange_ghost();
-            //     if (subroutine_PLAYING_state == GHOST_MOVE) {
-            //         control_blue_ghost_timer();
-            //         leave_house_check_pink_ghost();
-            //         leave_house_check_blue_ghost();
-            //         leave_house_check_orange_ghost();
-            //     }
-
+                self.control_movement_red_ghost(tasks, hwvideo, subroutine_attract_state);
+                // next three fns are the same ones
+                self.control_movement_pink_ghost(tasks, hwvideo, subroutine_attract_state);
+                self.control_movement_blue_ghost(tasks, hwvideo, subroutine_attract_state);
+                self.control_movement_orange_ghost(tasks, hwvideo, subroutine_attract_state);
+                if self.subroutine_playing_state == 3 {
+                    self.control_blue_ghost_timer(hwsound);
+                    self.leave_house_check_pink_ghost();
+                    self.leave_house_check_blue_ghost();
+                    self.leave_house_check_orange_ghost();
+                }
             }
-
         }
     }
 
@@ -973,6 +981,44 @@ impl GamePlaying {
         }
     }
 
+    // src:1376
+    fn control_blue_ghost_timer(&mut self, hwsound: &mut SoundChannels) {
+        if ! self.power_pill_effect {
+            return;
+        }
+
+        let red = SpriteName::Red as usize;
+        let pink = SpriteName::Pink as usize;
+        let blue = SpriteName::Blue as usize;
+        let orange = SpriteName::Orange as usize;
+        let man = SpriteName::Man as usize;
+
+        if self.ghost_blue_flag[red] | self.ghost_blue_flag[pink] | self.ghost_blue_flag[blue] | self.ghost_blue_flag[orange] {
+            self.counter_while_ghosts_are_blue -= 1;
+            if self.counter_while_ghosts_are_blue != 0 {
+                return;
+            }
+        }
+
+        if self.ghost_state[red] == GhostState::Alive {
+            self.ghost_blue_flag[red] = false;
+        }
+        if self.ghost_state[pink] == GhostState::Alive {
+            self.ghost_blue_flag[pink] = false;
+        }
+        if self.ghost_state[blue] == GhostState::Alive {
+            self.ghost_blue_flag[blue] = false;
+        }
+        if self.ghost_state[orange] == GhostState::Alive {
+            self.ghost_blue_flag[orange] = false;
+        }
+        self.sprite[man].c = ColorE::Yellow;
+        self.power_pill_effect = false;
+        self.counter_used_to_change_ghost_colors_under_big_pill_effects = 0;
+        self.counter_while_ghosts_are_blue = 0;
+        self.counter_current_number_of_killed_ghosts = 0;
+        hwsound.effect[1].num &= 0b0101_1111;
+    }
 
     // src:171d
     fn check_for_collision_with_regular_ghost(&mut self, tasks: &mut GameTask, hwsound: &mut SoundChannels)
@@ -1050,9 +1096,7 @@ impl GamePlaying {
         } else {
             &mut self.man_movement.normal_state
         };
-        let current_movement = *man_movement >> 31;
-        *man_movement = *man_movement << 1 | current_movement; // rotation
-        if current_movement == 0 {
+        if ! Self::walk(man_movement) {
             return;
         }
 
@@ -1271,8 +1315,97 @@ impl GamePlaying {
     }
 
     // src:1b36
-    fn control_movement_red_ghost(&mut self, timed_task: &mut GameTaskTimed, tasks: &mut GameTask, hwinput: &HardwareInput, hwvideo: &mut GameHwVideo, hwsound: &mut SoundChannels) {
-     TODO
+    fn control_movement_red_ghost(&mut self, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, subroutine_attract_state: u8) {
+        let red = SpriteName::Red as usize;
+        if self.ghost_substate_if_alive[red] == GhostSubState::AtHome
+            || self.ghost_state[red] != GhostState::Alive {
+            return;
+        }
+        self.check_and_set_difficulty_flags();
+        self.delay_ghost_movement[red] = self.check_ghost_entering_tunnel_slowdown(self.sprites_current_tile_xy[red]);
+        if self.delay_ghost_movement[red] {
+            if Self::walk(&mut self.red_ghost_movement.tunnel_state) {
+                self.handles_ghost_movement(tasks, hwvideo, SpriteName::Red, subroutine_attract_state);
+            }
+        } else if self.ghost_blue_flag[red] {
+            if Self::walk(&mut self.red_ghost_movement.speed_state) {
+                self.handles_ghost_movement(tasks, hwvideo, SpriteName::Red, subroutine_attract_state);
+            }
+        } else if self.red_ghost_second_difficulty_flag {
+            if Self::walk(&mut self.man_movement.second_difficulty_flag) {
+                self.handles_ghost_movement(tasks, hwvideo, SpriteName::Red, subroutine_attract_state);
+            }
+        } else if self.red_ghost_first_difficulty_flag {
+            if Self::walk(&mut self.red_ghost_movement.normal_state) {
+                self.handles_ghost_movement(tasks, hwvideo, SpriteName::Red, subroutine_attract_state);
+            }
+        }
+    }
+
+    // src:1c4b
+    fn control_movement_pink_ghost(&mut self, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, subroutine_attract_state: u8) {
+        let pink = SpriteName::Pink as usize;
+        if self.ghost_substate_if_alive[pink] == GhostSubState::GoingForMan
+            || self.ghost_state[pink] != GhostState::Alive {
+            return;
+        }
+        self.delay_ghost_movement[pink] = self.check_ghost_entering_tunnel_slowdown(self.sprites_current_tile_xy[pink]);
+
+        if self.delay_ghost_movement[pink] {
+            if Self::walk(&mut self.pink_ghost_movement.tunnel_state) {
+                self.handles_ghost_movement(tasks, hwvideo, SpriteName::Pink, subroutine_attract_state);
+            }
+        } else if self.ghost_blue_flag[pink] {
+            if Self::walk(&mut self.pink_ghost_movement.speed_state) {
+                self.handles_ghost_movement(tasks, hwvideo, SpriteName::Pink, subroutine_attract_state);
+            }
+        } else if Self::walk(&mut self.pink_ghost_movement.normal_state) {
+                self.handles_ghost_movement(tasks, hwvideo, SpriteName::Pink, subroutine_attract_state);
+        }
+    }
+
+    // src:1d22
+    fn control_movement_blue_ghost(&mut self, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, subroutine_attract_state: u8) {
+        let blue = SpriteName::Blue as usize;
+        if self.ghost_substate_if_alive[blue] == GhostSubState::GoingForMan
+            || self.ghost_state[blue] != GhostState::Alive {
+            return;
+        }
+        self.delay_ghost_movement[blue] = self.check_ghost_entering_tunnel_slowdown(self.sprites_current_tile_xy[blue]);
+
+        if self.delay_ghost_movement[blue] {
+            if Self::walk(&mut self.blue_ghost_movement.tunnel_state) {
+                self.handles_ghost_movement(tasks, hwvideo, SpriteName::Blue, subroutine_attract_state);
+            }
+        } else if self.ghost_blue_flag[blue] {
+            if Self::walk(&mut self.blue_ghost_movement.speed_state) {
+                self.handles_ghost_movement(tasks, hwvideo, SpriteName::Blue, subroutine_attract_state);
+            }
+        } else if Self::walk(&mut self.blue_ghost_movement.normal_state) {
+                self.handles_ghost_movement(tasks, hwvideo, SpriteName::Blue, subroutine_attract_state);
+        }
+    }
+
+    // src:1df9
+    fn control_movement_orange_ghost(&mut self, tasks: &mut GameTask, hwvideo: &mut GameHwVideo, subroutine_attract_state: u8) {
+        let orange = SpriteName::Orange as usize;
+        if self.ghost_substate_if_alive[orange] == GhostSubState::GoingForMan
+            || self.ghost_state[orange] != GhostState::Alive {
+            return;
+        }
+        self.delay_ghost_movement[orange] = self.check_ghost_entering_tunnel_slowdown(self.sprites_current_tile_xy[orange]);
+
+        if self.delay_ghost_movement[orange] {
+            if Self::walk(&mut self.orange_ghost_movement.tunnel_state) {
+                self.handles_ghost_movement(tasks, hwvideo, SpriteName::Orange, subroutine_attract_state);
+            }
+        } else if self.ghost_blue_flag[orange] {
+            if Self::walk(&mut self.orange_ghost_movement.speed_state) {
+                self.handles_ghost_movement(tasks, hwvideo, SpriteName::Orange, subroutine_attract_state);
+            }
+        } else if Self::walk(&mut self.orange_ghost_movement.normal_state) {
+                self.handles_ghost_movement(tasks, hwvideo, SpriteName::Orange, subroutine_attract_state);
+        }
     }
 
     // src:1bd8, src:1caf
@@ -1366,9 +1499,95 @@ impl GamePlaying {
     // (x, y) -> screen => no operation...
 
     // src:205a
-    fn check_ghost_entering_tunnel_slowdown(&mut self) {
-        // see fn is_tunnel_slowdown()
-        TODO
+    fn check_ghost_entering_tunnel_slowdown(&mut self, p: Point) -> bool {
+        Self::is_tunnel_slowdown(&self, p.x as u8, p.y as u8)
+    }
+
+    // src:2069
+    fn leave_house_check_pink_ghost(&mut self) {
+        let ghost = SpriteName::Pink as usize;
+        if self.ghost_substate_if_alive[ghost] == GhostSubState::AtHome {
+            let state_player = &self.state_player[self.current_player]; 
+            if state_player.dying_in_a_level {
+                if self.eaten_pills_counter_after_pacman_has_died_in_a_level == 7 {
+                    self.release_pink_ghost_from_the_ghost_house();
+                }
+            } else if state_player.can_pink_ghost_leave_home && self.pink_ghost_counter_to_go_out_of_home_limit > 0 {
+                self.release_pink_ghost_from_the_ghost_house();                
+            }
+        }
+    }
+
+    // src:2086
+    // releases pink ghost from the ghost house
+    fn release_pink_ghost_from_the_ghost_house(&mut self) {
+        let pink = SpriteName::Pink as usize;
+        self.ghost_substate_if_alive[pink] = GhostSubState::CrossingTheDoor;
+    }
+
+    // src:208c
+    fn leave_house_check_blue_ghost(&mut self) {
+        let ghost = SpriteName::Blue as usize;
+        if self.ghost_substate_if_alive[ghost] == GhostSubState::AtHome {
+            let state_player = &self.state_player[self.current_player]; 
+            if state_player.dying_in_a_level {
+                if self.eaten_pills_counter_after_pacman_has_died_in_a_level == 17 {
+                    self.release_blue_ghost_from_the_ghost_house();
+                }
+            } else if state_player.can_blue_ghost_leave_home && self.blue_ghost_counter_to_go_out_of_home_limit > 0 {
+                self.release_blue_ghost_from_the_ghost_house();                
+            }
+        }
+    }
+
+    // src:20a9
+    fn release_blue_ghost_from_the_ghost_house(&mut self) {
+        let blue = SpriteName::Blue as usize;
+        self.ghost_substate_if_alive[blue] = GhostSubState::GoingToTheDoor;
+    }
+
+    // src:20af
+    fn leave_house_check_orange_ghost(&mut self) {
+        let ghost = SpriteName::Orange as usize;
+        if self.ghost_substate_if_alive[ghost] == GhostSubState::AtHome {
+            let state_player = &mut self.state_player[self.current_player]; 
+            if state_player.dying_in_a_level {
+                if self.eaten_pills_counter_after_pacman_has_died_in_a_level == 32 {
+                    self.eaten_pills_counter_after_pacman_has_died_in_a_level = 0;
+                    state_player.dying_in_a_level = false;
+                }
+            } else if state_player.can_orange_ghost_leave_home && self.orange_ghost_counter_to_go_out_of_home_limit > 0 {
+                self.release_orange_ghost_from_the_ghost_house();                
+            }
+        }
+    }
+
+    // src:20d1
+    fn release_orange_ghost_from_the_ghost_house(&mut self) {
+        let orange = SpriteName::Orange as usize;
+        self.ghost_substate_if_alive[orange] = GhostSubState::GoingToTheDoor;
+    }
+
+    // src:20d7
+    // Checks for and sets the difficulty flags based on number of pellets eaten
+    fn check_and_set_difficulty_flags(&mut self) {
+        if self.ghost_substate_if_alive[SpriteName::Orange as usize] == GhostSubState::AtHome {
+            return;
+        }
+        if ! self.red_ghost_first_difficulty_flag {
+            // 244 = max number of peletts to eat (see PELLET_TO_EAT_LEVEL2)
+            let dots_to_eat = 244 - self.state_player[self.current_player].dots_eaten;
+            if self.red_ghost_remainder_of_pills_when_first_difficulty_flag_is_set >= dots_to_eat {
+                self.red_ghost_first_difficulty_flag = true;
+            }
+        }
+        if ! self.red_ghost_second_difficulty_flag {
+            // 244 = max number of peletts to eat (see PELLET_TO_EAT_LEVEL2)
+            let dots_to_eat = 244 - self.state_player[self.current_player].dots_eaten;
+            if self.red_ghost_remainder_of_pills_when_second_difficulty_flag_is_set >= dots_to_eat {
+                self.red_ghost_second_difficulty_flag = true;
+            }
+        }
     }
 
     // src:24c9

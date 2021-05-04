@@ -176,15 +176,15 @@ const GHOST_DIFFICULTY_OUT_COUNTER: [ [u8; 3]; 4] = [
 1: number of pills, difficulty flag #2
 */
 const GHOST_DIFFICULTY_PILL_COUNTER: [ [u8; 2]; 9] = [
-    [0x14, 0x0a],
-    [0x1e, 0x0f],
-    [0x28, 0x14],
-    [0x32, 0x19],
-    [0x3c, 0x1e],
-    [0x50, 0x28],
-    [0x64, 0x32],
-    [0x78, 0x3c],
-    [0x8c, 0x46],
+    [ 20, 10],
+    [ 30, 15],
+    [ 40, 20],
+    [ 50, 25],
+    [ 60, 30],
+    [ 80, 40],
+    [100, 50],
+    [120, 60],
+    [140, 70],
 ];
 
 // src:0861
