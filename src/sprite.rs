@@ -25,7 +25,7 @@ pub enum SpriteId {
     Apple=4,
     Pear=5,
     Banana=6,
-    PearSmall=7,
+    Junior=7,
 
     S100=8,
     S200=9,
@@ -104,7 +104,7 @@ pub enum SpriteId {
     AppleFlipY=4 | 0x40,
     PearFlipY=5 | 0x40,
     BananaFlipY=6 | 0x40,
-    PearSmallFlipY=7 | 0x40,
+    JuniorFlipY=7 | 0x40,
 
     S100FlipY=8 | 0x40,
     S200FlipY=9 | 0x40,
@@ -183,7 +183,7 @@ pub enum SpriteId {
     AppleFlipX=4 | 0x80,
     PearFlipX=5 | 0x80,
     BananaFlipX=6 | 0x80,
-    PearSmallFlipX=7 | 0x80,
+    JuniorFlipX=7 | 0x80,
 
     S100FlipX=8 | 0x80,
     S200FlipX=9 | 0x80,
@@ -262,7 +262,7 @@ pub enum SpriteId {
     AppleFlipXFlipY=4 | 0xC0,
     PearFlipXFlipY=5 | 0xC0,
     BananaFlipXFlipY=6 | 0xC0,
-    PearSmallFlipXFlipY=7 | 0xC0,
+    JuniorFlipXFlipY=7 | 0xC0,
 
     S100FlipXFlipY=8 | 0xC0,
     S200FlipXFlipY=9 | 0xC0,
