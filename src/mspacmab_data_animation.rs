@@ -726,7 +726,7 @@ const SPRITE_CODES_FOR_STORKS: [SpriteId; 9] = [
 ];
 // src:8698
 const SPRITE_CODES_FOR_STORK_CARRIES: [SpriteId; 2] = [
-    SpriteId::PearSmall, SpriteId::CodeForNoSprite,
+    SpriteId::Junior, SpriteId::CodeForNoSprite,
 ];
 // src:869a
 const SPRITE_JUNIOR_MAN: [SpriteId; 2] = [
