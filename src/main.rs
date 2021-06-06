@@ -39,6 +39,7 @@ mod game_task;
 mod game_task_timed;
 mod game;
 mod ghost_difficulty;
+mod fruit;
 
 use test_mode::test_mode;
 use game_hw_video::GameHwVideo;
